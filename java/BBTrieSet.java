@@ -1,6 +1,7 @@
 import java.util.Arrays;
 
 
+/** A set implemented as a bitwise trie with a bitmap. */
 public class BBTrieSet {
 
     long[] mem;
@@ -31,8 +32,7 @@ public class BBTrieSet {
             // requested size available in free list, re-link and return head
             freeLists[size] = mem[(int) free];
             return free;
-        }
-        else {
+        } else {
             // expansion required?
             if (freeIdx + size > mem.length) {
                 // increase by 25% and assure this is enough
@@ -40,7 +40,6 @@ public class BBTrieSet {
                 int newSize = currSize + Math.max(currSize / 4, size);
                 mem = Arrays.copyOf(mem, newSize);
             }
-
             long idx = freeIdx;
             freeIdx += size;
             return idx;
@@ -54,11 +53,13 @@ public class BBTrieSet {
         int b = (int) nodeIdx;
 
         // copy with gap for child
-        for (int j = 0; j < childIdx; j++)
+        for (int j = 0; j < childIdx; j++) {
             mem[a++] = mem[b++];
+        }
         a++; // inserted
-        for (int j = childIdx; j < size; j++)
+        for (int j = childIdx; j < size; j++) {
             mem[a++] = mem[b++];
+        }
 
         deallocate(nodeIdx, size);
 
@@ -71,11 +72,13 @@ public class BBTrieSet {
         // copy with child removed
         int a = (int) newNodeRef;
         int b = (int) nodeIdx;
-        for (int j = 0; j < childIdx; j++)
+        for (int j = 0; j < childIdx; j++) {
             mem[a++] = mem[b++];
+        }
         b++; // removed
-        for (int j = childIdx + 1; j < size; j++)
+        for (int j = childIdx + 1; j < size; j++) {
             mem[a++] = mem[b++];
+        }
 
         deallocate(nodeIdx, size);
 
@@ -83,8 +86,9 @@ public class BBTrieSet {
     }
 
     private void deallocate(long idx, int size) {
-        if (idx == KNOWN_EMPTY_NODE)
+        if (idx == KNOWN_EMPTY_NODE) {
             return; // keep our known empty node
+        }
 
         // add to head of free-list
         mem[(int) idx] = freeLists[size];
@@ -122,8 +126,7 @@ public class BBTrieSet {
             long newNodeRef = allocateDelete(nodeRef, size + 1, idx + 1);
             mem[(int) newNodeRef] = bitMap & ~bitPos;
             return newNodeRef;
-        }
-        else {
+        } else {
             // node is now empty, remove it
             deallocate(nodeRef, size + 1);
             return KNOWN_DELETED_NODE;
@@ -142,8 +145,9 @@ public class BBTrieSet {
       * @return A boolean saying whether or not the key exists.
       */
     public boolean get(byte[] key, int len) {
-        if (root == KNOWN_EMPTY_NODE)
+        if (root == KNOWN_EMPTY_NODE) {
             return false;
+        }
 
         long nodeRef = root;
         int off = 0;
@@ -151,8 +155,9 @@ public class BBTrieSet {
         for (;;) {
             long bitMap = mem[(int) nodeRef];
             long bitPos = 1L << key[off++]; // mind the ++
-            if ((bitMap & bitPos) == 0)
+            if ((bitMap & bitPos) == 0) {
                 return false; // not found
+            }
 
             long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
 
@@ -160,8 +165,7 @@ public class BBTrieSet {
                 // at leaf
                 long bitPosLeaf = 1L << key[off];
                 return ((value & bitPosLeaf) != 0);
-            }
-            else {
+            } else {
                 // child pointer
                 nodeRef = value;
             }
@@ -182,9 +186,9 @@ public class BBTrieSet {
             count++;
             root = nodeRef;
             return true;
-        }
-        else
+        } else {
             return false;
+        }
     }
 
     private long set(long nodeRef, byte[] key, int off, int len) {
@@ -195,13 +199,13 @@ public class BBTrieSet {
         if ((bitMap & bitPos) == 0) {
             // child not present yet
             long value;
-            if (off == len - 1)
+            if (off == len - 1) {
                 value = 1L << key[off];
-            else
+            } else {
                 value = createLeaf(key, off, len);
+            }
             return insertChild(nodeRef, bitMap, bitPos, idx, value);
-        }
-        else {
+        } else {
             // child present
             long value = mem[(int) nodeRef + 1 + idx];
             if (off == len - 1) {
@@ -211,19 +215,20 @@ public class BBTrieSet {
                     // update leaf bitMap
                     mem[(int) nodeRef + 1 + idx] = value | bitPosLeaf;
                     return nodeRef;
-                }
-                else
+                } else {
                     // key already present
                     return KNOWN_EMPTY_NODE;
-            }
-            else {
+                }
+            } else {
                 // not at leaf, recursion
                 long childNodeRef = value;
                 long newChildNodeRef = set(childNodeRef, key, off, len);
-                if (newChildNodeRef == KNOWN_EMPTY_NODE)
+                if (newChildNodeRef == KNOWN_EMPTY_NODE) {
                     return KNOWN_EMPTY_NODE;
-                if (newChildNodeRef != childNodeRef)
+                }
+                if (newChildNodeRef != childNodeRef) {
                     mem[(int) nodeRef + 1 + idx] = newChildNodeRef;
+                }
                 return nodeRef;
             }
         }
@@ -240,58 +245,61 @@ public class BBTrieSet {
         long nodeRef = clear(root, key, 0, len);
         if (nodeRef != KNOWN_EMPTY_NODE) {
             count--;
-            if (nodeRef == KNOWN_DELETED_NODE)
+            if (nodeRef == KNOWN_DELETED_NODE) {
                 root = KNOWN_EMPTY_NODE;
-            else
+            } else {
                 root = nodeRef;
+            }
             return true;
-        }
-        else
+        } else {
             return false;
+        }
     }
 
     public long clear(long nodeRef, byte[] key, int off, int len) {
-        if (root == KNOWN_EMPTY_NODE)
+        if (root == KNOWN_EMPTY_NODE) {
             return KNOWN_EMPTY_NODE;
+        }
 
         long bitMap = mem[(int) nodeRef];
         long bitPos = 1L << key[off++]; // mind the ++
         if ((bitMap & bitPos) == 0) {
             // child not present, key not found
             return KNOWN_EMPTY_NODE;
-        }
-        else {
+        } else {
             // child present
             int idx = Long.bitCount(bitMap & (bitPos - 1));
             long value = mem[(int) nodeRef + 1 + idx];
             if (off == len - 1) {
                 // at leaf
                 long bitPosLeaf = 1L << key[off];
-                if ((value & bitPosLeaf) == 0)
+                if ((value & bitPosLeaf) == 0) {
                     // key not present
                     return KNOWN_EMPTY_NODE;
-                else {
+                } else {
                     // clear bit in leaf
                     value = value & ~bitPosLeaf;
                     if (value != 0) {
                         // leaf still has some bits set, keep leaf but update
                         mem[(int) nodeRef + 1 + idx] = value;
                         return nodeRef;
-                    }
-                    else
+                    } else {
                         return removeChild(nodeRef, bitMap, bitPosLeaf, idx);
+                    }
                 }
-            }
-            else {
+            } else {
                 // not at leaf
                 long childNodeRef = value;
                 long newChildNodeRef = clear(childNodeRef, key, off, len);
-                if (newChildNodeRef == KNOWN_EMPTY_NODE)
+                if (newChildNodeRef == KNOWN_EMPTY_NODE) {
                     return KNOWN_EMPTY_NODE;
-                if (newChildNodeRef == KNOWN_DELETED_NODE)
+                }
+                if (newChildNodeRef == KNOWN_DELETED_NODE) {
                     return removeChild(nodeRef, bitMap, bitPos, idx);
-                if (newChildNodeRef != childNodeRef)
+                }
+                if (newChildNodeRef != childNodeRef) {
                     mem[(int) nodeRef + 1 + idx] = newChildNodeRef;
+                }
                 return nodeRef;
             }
         }

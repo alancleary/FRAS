@@ -77,6 +77,16 @@ public class BBTrieSetSample {
         }
         System.out.println("");
 
+        // rank-select queries on trie1
+        System.out.println("rank-select operation: trie1");
+        test = new int[] { 0, 10, 25, 30, 40, 45, 50, 55, 60, 70 };
+        for (int i = 0; i < test.length; i++) {
+            len = set6Int(key, test[i]);
+            boolean selected = trie1.rankSelect(key, len);
+            System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
+        }
+        System.out.println("");
+
         // clear (remove) values from trie1
         System.out.println("remove operation: trie1");
         test = new int[] { 10, 20, 30, 40, 45, 50, 55, 60, 61, 62, 63 };

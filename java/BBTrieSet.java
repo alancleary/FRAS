@@ -173,6 +173,133 @@ public class BBTrieSet {
     }
 
     /**
+      * Gets the largest key that is less than or equal to the given byte key. This is equivalent
+      * to a paired rank-select query on a bit vector, i.e. select(rank(key)).
+      *
+      * @param key The byte key to match that will be updated if a different key is selected.
+      * @param len The length of the byte key.
+      * @return A boolean saying whether or not a key was selected.
+      */
+    public boolean rankSelect(byte[] key, int len) {
+        if (root == KNOWN_EMPTY_NODE) {
+            return false;
+        }
+
+        long nodeRef = root;
+        int off = 0;
+
+        long nearestNodeRef = KNOWN_EMPTY_NODE;
+        int nearestOff = 0;
+
+        for (;;) {
+            long bitMap = mem[(int) nodeRef];
+            long bitPos = 1L << key[off];
+
+            // memoize the node if it has smaller keys
+            if (rank(bitMap, key[off]) > 0) {
+                nearestNodeRef = nodeRef;
+                nearestOff = off;
+            }
+
+            // key not found
+            if ((bitMap & bitPos) == 0) {
+                return rankSelect(nearestNodeRef, key, nearestOff, len);
+            }
+
+            long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
+            long value = mem[(int) idx];
+
+            if (++off == len - 1) {
+                // at leaf
+                long bitPosLeaf = 1L << key[off];
+                // key found
+                if ((value & bitPosLeaf) != 0) {
+                    return true;
+                }
+                // check if there's a smaller key in the leaf
+                if (rank(value, key[off]) > 0) {
+                    return rankSelect(idx, key, off, len);
+                }
+                // go back to the last node with a bit before the matched bit
+                return rankSelect(nearestNodeRef, key, nearestOff, len);
+            } else {
+                // child pointer
+                nodeRef = value;
+            }
+        }
+    }
+
+    /**
+      * Computes the exclusive [0, i) rank on the given long.
+      *
+      * @param bits The long to compute the rank on.
+      * @param i The position to compute the rank for.
+      * @return The computed rank.
+      */
+    private long rank(long bits, long i) {
+        // HACK: shifting by 64 (i.e. Long.SIZE) is equivalent to shifting by 0 in Java...
+        if (i == 0) {
+            return 0L;
+        }
+        long rankBits = bits << (Long.SIZE - i);
+        return Long.bitCount(rankBits);
+    }
+
+    /**
+      * Selects the largest key that is less than the key rankSelect failed to match. Assumes that
+      * the given nodeRef has at least one key that is less than the given byte key or that it is
+      * the KNOWN_EMPTY_NODE value.
+      *
+      * @param nodeRef The node to start the selection from.
+      * @param key The partially matched byte key that will be updated if a different key is selected.
+      * @param off The offset into the key that corresponds to the nodeRef node.
+      * @param len The length of the byte key.
+      * @return A boolean saying whether or not a key was selected.
+      */
+    private boolean rankSelect(long nodeRef, byte[] key, int off, int len) {
+        // no smaller key exists
+        if (nodeRef == KNOWN_EMPTY_NODE) {
+            return false;
+        }
+
+        long bitMap = mem[(int) nodeRef];
+        long bitPos = 1L << key[off];
+
+        // get the largest key that is less than the given key
+        long maskedBitMap = bitMap & (bitPos - 1);
+        key[off] = largestKey(maskedBitMap);
+        bitPos = 1L << key[off];
+
+        // nodeRef is a leaf node
+        if (off++ == len - 1) {  // mind the ++
+            return true;
+        }
+
+        // get the largest key in all remaining nodes
+        nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+        while (off < len - 1) {
+            bitMap = mem[(int) nodeRef];
+            key[off] = largestKey(bitMap);
+            bitPos = 1L << key[off++];  // mind the ++
+            nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+        }
+        // at leaf
+        key[off] = largestKey(nodeRef);
+
+        return true;
+    }
+
+    /**
+      * Computes the largest key in the given bitmap.
+      *
+      * @param bitmap The bitmap to compute the largest key in.
+      * @return The largest key.
+      */
+    private byte largestKey(long bitMap) {
+        return (byte)(Long.SIZE - Long.numberOfLeadingZeros(bitMap) - 1);
+    }
+
+    /**
       * Adds the given byte key to the set.
       *
       * @param key The byte key.

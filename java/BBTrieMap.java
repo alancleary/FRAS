@@ -2,10 +2,10 @@ import java.util.Arrays;
 
 
 /** A map implemented as a bitwise trie with a bitmap. */
-public class BBTrieMap {
+public class BBTrieMap<V> {
 
     long[] mem;
-    long[][] values;
+    Object[][] values;
     long[] freeLists;
     long freeIdx;
 
@@ -24,7 +24,7 @@ public class BBTrieMap {
 
     public BBTrieMap(int size) {
         mem = new long[size];
-        values = new long[size][];
+        values = new Object[size][];
         freeLists = new long[FREE_LIST_SIZE];
         freeIdx = HEADER_SIZE;
         root = KNOWN_EMPTY_NODE;
@@ -105,7 +105,7 @@ public class BBTrieMap {
         freeLists[size] = idx;
     }
 
-    private long createLeaf(byte[] key, int off, int len, long keyValue) {
+    private long createLeaf(byte[] key, int off, int len, V keyValue) {
         long newNodeRef = allocate(2);
         int a = (int) newNodeRef;
         mem[a++] = 1L << key[len - 2];
@@ -131,12 +131,12 @@ public class BBTrieMap {
         return newNodeRef;
     }
 
-    private void insertValue(long nodeRef, long bitPos, long keyValue) {
+    private void insertValue(long nodeRef, long bitPos, V keyValue) {
         long leaf = mem[(int) nodeRef];
 
         // create the node's value array if necessary
         if (values[(int) nodeRef] == null) {
-            values[(int) nodeRef] = new long[LEAF_SIZE];
+            values[(int) nodeRef] = new Object[LEAF_SIZE];
         }
 
         // compute the insertion index of the key value
@@ -152,7 +152,7 @@ public class BBTrieMap {
         values[(int) nodeRef][idx] = keyValue;
     }
 
-    private void updateValue(long nodeRef, long bitPos, long keyValue) {
+    private void updateValue(long nodeRef, long bitPos, V keyValue) {
         long leaf = mem[(int) nodeRef];
 
         // compute the insertion index of the key value
@@ -190,13 +190,16 @@ public class BBTrieMap {
             values[(int) nodeRef][i] = values[(int) nodeRef][i + 1];
         }
 
+        // delete the extra value
+        values[(int) nodeRef][numValues - 1] = null;
+
         // delete the node's value array if necessary
         if (numValues == 0) {
             values[(int) nodeRef] = null;
         }
     }
 
-    private long getValue(long nodeRef, long bitPos) {
+    private V getValue(long nodeRef, long bitPos) {
         long leaf = mem[(int) nodeRef];
 
         // compute the index of the key value
@@ -204,7 +207,9 @@ public class BBTrieMap {
         int idx = Long.bitCount(maskedLeaf) - 1;
 
         // get the value
-        return values[(int) nodeRef][idx];
+        @SuppressWarnings("unchecked")
+        final V keyValue = (V) values[(int) nodeRef][idx];
+        return keyValue;
     }
 
     public long size() {
@@ -219,7 +224,7 @@ public class BBTrieMap {
       * @return The value stored for the given key.
       * @throws Exception if the key is not found.
       */
-    public long get(byte[] key, int len) throws Exception {
+    public V get(byte[] key, int len) throws Exception {
         if (root == KNOWN_EMPTY_NODE) {
             throw new Exception("ROOT: Key not found");
         }
@@ -261,7 +266,7 @@ public class BBTrieMap {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    public long rankSelect(byte[] key, int len) throws Exception {
+    public V rankSelect(byte[] key, int len) throws Exception {
         if (root == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");
         }
@@ -338,7 +343,7 @@ public class BBTrieMap {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    private long rankSelect(long nodeRef, byte[] key, int off, int len) throws Exception {
+    private V rankSelect(long nodeRef, byte[] key, int off, int len) throws Exception {
         // no smaller key exists
         if (nodeRef == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");
@@ -390,7 +395,7 @@ public class BBTrieMap {
       * @param keyValue The value to store for the byte key.
       * @return A boolean saying whether or not the key was added.
       */
-    public boolean set(byte[] key, int len, long keyValue) {
+    public boolean set(byte[] key, int len, V keyValue) {
         long nodeRef = set(root, key, 0, len, keyValue);
         if (nodeRef != KNOWN_EMPTY_NODE) {
             // denotes change
@@ -402,7 +407,7 @@ public class BBTrieMap {
         }
     }
 
-    private long set(long nodeRef, byte[] key, int off, int len, long keyValue) {
+    private long set(long nodeRef, byte[] key, int off, int len, V keyValue) {
         long bitMap = mem[(int) nodeRef];
         long bitPos = 1L << key[off++]; // mind the ++
         int idx = Long.bitCount(bitMap & (bitPos - 1));

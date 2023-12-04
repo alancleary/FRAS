@@ -204,7 +204,7 @@ public class BBTrieSample {
         System.out.println();
 
         // create a map
-        BBTrieMap map1 = new BBTrieMap(100);
+        BBTrieMap<Integer> map1 = new BBTrieMap<Integer>(100);
 
         // add keys and values to map1
         System.out.println("add operation: map1");

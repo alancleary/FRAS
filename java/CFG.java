@@ -105,21 +105,21 @@ public class CFG {
 
         // read rules in order they were added to grammar
         for (i = MR_REPAIR_CHAR_SIZE; i < buffSize; i++) {
-	          for (j = 0; ;j++) {
+            for (j = 0; ;j++) {
                 c = Integer.parseInt(reader.readLine());
-	              if (c == MR_REPAIR_DUMMY_CODE) {
-	          	      break;
-	              }
+                if (c == MR_REPAIR_DUMMY_CODE) {
+                    break;
+                }
                 //buff[j] = c;
                 // use start rule as a buffer
                 rules[buffSize][j] = c;
-	          }
+            }
             ruleLength = j;
             rules[i] = new int[ruleLength];
-	          for (j = 0; j < ruleLength; j++) {
-	              //rules[i][j] = buff[j];
-	              rules[i][j] = rules[buffSize][j];
-	          }
+            for (j = 0; j < ruleLength; j++) {
+                //rules[i][j] = buff[j];
+                rules[i][j] = rules[buffSize][j];
+            }
         }
 
         // read start rule

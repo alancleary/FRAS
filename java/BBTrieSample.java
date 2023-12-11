@@ -204,7 +204,7 @@ public class BBTrieSample {
         System.out.println();
 
         // create a map
-        BBTrieMap<Integer> map1 = new BBTrieMap<Integer>(100);
+        BBTrieMap map1 = new BBTrieMap(100);
 
         // add keys and values to map1
         System.out.println("add operation: map1");
@@ -220,7 +220,7 @@ public class BBTrieSample {
 
         // check if keys exist in map1
         System.out.println("contains operation: map1");
-        test = new int[] { 10, 25, 30, 40, 45, 50, 55, 60 };
+        test = new int[] { 10, 20, 25, 30, 40, 45, 50, 55, 60, 61, 62, 63 };
         for (int i = 0; i < test.length; i++) {
             len = set6Int(key, test[i]);
             try {
@@ -265,7 +265,6 @@ public class BBTrieSample {
         }
         System.out.println("map1 size: " + map1.size());
         System.out.println();
-
     }
 }
 

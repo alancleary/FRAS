@@ -2,18 +2,14 @@ import java.util.Arrays;
 
 
 /** A map implemented as a bitwise trie with a bitmap. */
-public class BBTrieMap<V> {
+public class BBTrieMap {
 
     long[] mem;
-    Object[][] values;
     long[] freeLists;
     long freeIdx;
 
     long root;
     long count;
-
-    // each leaf node can store at most 64 values
-    final static int LEAF_SIZE = 64;
 
     // maximum node size is 1 (bitMap) + 64 (child pointers or leaf values) + 1 as arrays are zero based
     final static int FREE_LIST_SIZE = 1+64+1;
@@ -24,7 +20,6 @@ public class BBTrieMap<V> {
 
     public BBTrieMap(int size) {
         mem = new long[size];
-        values = new Object[size][];
         freeLists = new long[FREE_LIST_SIZE];
         freeIdx = HEADER_SIZE;
         root = KNOWN_EMPTY_NODE;
@@ -44,7 +39,6 @@ public class BBTrieMap<V> {
                 int currSize = mem.length;
                 int newSize = currSize + Math.max(currSize / 4, size);
                 mem = Arrays.copyOf(mem, newSize);
-                values = Arrays.copyOf(values, newSize);
             }
             long idx = freeIdx;
             freeIdx += size;
@@ -60,12 +54,10 @@ public class BBTrieMap<V> {
 
         // copy with gap for child
         for (int j = 0; j < childIdx; j++) {
-            values[a] = values[b];
             mem[a++] = mem[b++];
         }
         a++; // inserted
         for (int j = childIdx; j < size; j++) {
-            values[a] = values[b];
             mem[a++] = mem[b++];
         }
 
@@ -81,12 +73,10 @@ public class BBTrieMap<V> {
         int a = (int) newNodeRef;
         int b = (int) nodeIdx;
         for (int j = 0; j < childIdx; j++) {
-            values[a] = values[b];
             mem[a++] = mem[b++];
         }
         b++; // removed
         for (int j = childIdx + 1; j < size; j++) {
-            values[a] = values[b];
             mem[a++] = mem[b++];
         }
 
@@ -105,14 +95,12 @@ public class BBTrieMap<V> {
         freeLists[size] = idx;
     }
 
-    private long createLeaf(byte[] key, int off, int len, V keyValue) {
+    private long createLeaf(byte[] key, int off, int len, long keyValue) {
         long newNodeRef = allocate(2);
         int a = (int) newNodeRef;
-        mem[a++] = 1L << key[len - 2];
-        long leafValue = 1L << key[len - 1];
-        mem[a] = leafValue;
-        insertValue(a, leafValue, keyValue);
-        len -= 3;
+        mem[a++] = 1L << key[len - 1];
+        mem[a] = keyValue;
+        len -= 2;
         while (len >= off) {
             long newParentNodeRef = allocate(2);
             a = (int) newParentNodeRef;
@@ -131,38 +119,6 @@ public class BBTrieMap<V> {
         return newNodeRef;
     }
 
-    private void insertValue(long nodeRef, long bitPos, V keyValue) {
-        long leaf = mem[(int) nodeRef];
-
-        // create the node's value array if necessary
-        if (values[(int) nodeRef] == null) {
-            values[(int) nodeRef] = new Object[LEAF_SIZE];
-        }
-
-        // compute the insertion index of the key value
-        long maskedLeaf = (leaf & (bitPos - 1)) | bitPos;
-        int idx = Long.bitCount(maskedLeaf) - 1;
-
-        // shift the values after the insertion index
-        for (int i = Long.bitCount(leaf); i > idx; i--) {
-            values[(int) nodeRef][i] = values[(int) nodeRef][i - 1];
-        }
-
-        // insert the new value
-        values[(int) nodeRef][idx] = keyValue;
-    }
-
-    private void updateValue(long nodeRef, long bitPos, V keyValue) {
-        long leaf = mem[(int) nodeRef];
-
-        // compute the insertion index of the key value
-        long maskedLeaf = (leaf & (bitPos - 1)) | bitPos;
-        int idx = Long.bitCount(maskedLeaf) - 1;
-
-        // update the value
-        values[(int) nodeRef][idx] = keyValue;
-    }
-
     private long removeChild(long nodeRef, long bitMap, long bitPos, int idx) {
         int size = Long.bitCount(bitMap);
         if (size > 1) {
@@ -177,41 +133,6 @@ public class BBTrieMap<V> {
         }
     }
 
-    private void deleteValue(long nodeRef, long bitPos) {
-        long leaf = mem[(int) nodeRef];
-
-        // compute the deletion index of the key value
-        long maskedLeaf = (leaf & (bitPos - 1)) | bitPos;
-        int idx = Long.bitCount(maskedLeaf) - 1;
-
-        // shift the values after the deletion index
-        int numValues = Long.bitCount(leaf);
-        for (int i = idx; i < numValues; i++) {
-            values[(int) nodeRef][i] = values[(int) nodeRef][i + 1];
-        }
-
-        // delete the extra value
-        values[(int) nodeRef][numValues - 1] = null;
-
-        // delete the node's value array if necessary
-        if (numValues == 0) {
-            values[(int) nodeRef] = null;
-        }
-    }
-
-    private V getValue(long nodeRef, long bitPos) {
-        long leaf = mem[(int) nodeRef];
-
-        // compute the index of the key value
-        long maskedLeaf = (leaf & (bitPos - 1)) | bitPos;
-        int idx = Long.bitCount(maskedLeaf) - 1;
-
-        // get the value
-        @SuppressWarnings("unchecked")
-        final V keyValue = (V) values[(int) nodeRef][idx];
-        return keyValue;
-    }
-
     public long size() {
         return count;
     }
@@ -224,9 +145,9 @@ public class BBTrieMap<V> {
       * @return The value stored for the given key.
       * @throws Exception if the key is not found.
       */
-    public V get(byte[] key, int len) throws Exception {
+    public long get(byte[] key, int len) throws Exception {
         if (root == KNOWN_EMPTY_NODE) {
-            throw new Exception("ROOT: Key not found");
+            throw new Exception("Key not found");
         }
 
         long nodeRef = root;
@@ -236,19 +157,12 @@ public class BBTrieMap<V> {
             long bitMap = mem[(int) nodeRef];
             long bitPos = 1L << key[off++]; // mind the ++
             if ((bitMap & bitPos) == 0) {
-                throw new Exception("INTERNAL: Key not found");
+                throw new Exception("Key not found");
             }
 
-            long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
-            long value = mem[(int) idx];
-
-            if (off == len - 1) {
-                // at leaf
-                long bitPosLeaf = 1L << key[off];
-                if ((value & bitPosLeaf) == 0) {
-                    throw new Exception("LEAF: Key not found");
-                }
-                return getValue(idx, bitPosLeaf);
+            long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+            if (off == len) {
+                return value;
             } else {
                 // child pointer
                 nodeRef = value;
@@ -266,7 +180,7 @@ public class BBTrieMap<V> {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    public V rankSelect(byte[] key, int len) throws Exception {
+    public long rankSelect(byte[] key, int len) throws Exception {
         if (root == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");
         }
@@ -295,19 +209,9 @@ public class BBTrieMap<V> {
             long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
             long value = mem[(int) idx];
 
-            if (++off == len - 1) {
-                // at leaf
-                long bitPosLeaf = 1L << key[off];
-                // key found
-                if ((value & bitPosLeaf) != 0) {
-                    return getValue(idx, bitPosLeaf);
-                }
-                // check if there's a smaller key in the leaf
-                if (rank(value, key[off]) > 0) {
-                    return rankSelect(idx, key, off, len);
-                }
-                // go back to the last node with a bit before the matched bit
-                return rankSelect(nearestNodeRef, key, nearestOff, len);
+            if (++off == len) {
+                // at value
+                return value;
             } else {
                 // child pointer
                 nodeRef = value;
@@ -343,7 +247,7 @@ public class BBTrieMap<V> {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    private V rankSelect(long nodeRef, byte[] key, int off, int len) throws Exception {
+    private long rankSelect(long nodeRef, byte[] key, int off, int len) throws Exception {
         // no smaller key exists
         if (nodeRef == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");
@@ -355,26 +259,18 @@ public class BBTrieMap<V> {
         // get the largest key that is less than the given key
         long maskedBitMap = bitMap & (bitPos - 1);
         key[off] = largestKey(maskedBitMap);
-        bitPos = 1L << key[off];
-
-        // nodeRef is a leaf node
-        if (off++ == len - 1) {  // mind the ++
-            return getValue(nodeRef, bitPos);
-        }
+        bitPos = 1L << key[off++];  // mind the ++
 
         // get the largest key in all remaining nodes
         nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
-        while (off < len - 1) {
+        while (off < len) {
             bitMap = mem[(int) nodeRef];
             key[off] = largestKey(bitMap);
             bitPos = 1L << key[off++];  // mind the ++
             nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
         }
-        // at leaf
-        key[off] = largestKey(nodeRef);
-        bitPos = 1L << key[off];
 
-        return getValue(nodeRef, bitPos);
+        return nodeRef;
     }
 
     /**
@@ -395,7 +291,7 @@ public class BBTrieMap<V> {
       * @param keyValue The value to store for the byte key.
       * @return A boolean saying whether or not the key was added.
       */
-    public boolean set(byte[] key, int len, V keyValue) {
+    public boolean set(byte[] key, int len, long keyValue) {
         long nodeRef = set(root, key, 0, len, keyValue);
         if (nodeRef != KNOWN_EMPTY_NODE) {
             // denotes change
@@ -407,7 +303,7 @@ public class BBTrieMap<V> {
         }
     }
 
-    private long set(long nodeRef, byte[] key, int off, int len, V keyValue) {
+    private long set(long nodeRef, byte[] key, int off, int len, long keyValue) {
         long bitMap = mem[(int) nodeRef];
         long bitPos = 1L << key[off++]; // mind the ++
         int idx = Long.bitCount(bitMap & (bitPos - 1));
@@ -415,36 +311,20 @@ public class BBTrieMap<V> {
         if ((bitMap & bitPos) == 0) {
             // child not present yet
             long value;
-            if (off == len - 1) {
-                value = 1L << key[off];
+            if (off == len) {
+                value = keyValue;
             } else {
                 value = createLeaf(key, off, len, keyValue);
             }
-            long newNodeRef = insertChild(nodeRef, bitMap, bitPos, idx, value);
-            if (off == len - 1) {
-                insertValue(newNodeRef, value, keyValue);
-            }
-            return newNodeRef;
+            return insertChild(nodeRef, bitMap, bitPos, idx, value);
         } else {
             // child present
-            long leafRef = nodeRef + 1 + idx;
-            long value = mem[(int) leafRef];
-            if (off == len - 1) {
-                // at leaf
-                long bitPosLeaf = 1L << key[off];
-                if ((value & bitPosLeaf) == 0) {
-                    // update leaf bitMap
-                    mem[(int) leafRef] = value | bitPosLeaf;
-                    insertValue(leafRef, bitPosLeaf, keyValue);
-                    return nodeRef;
-                } else {
-                    updateValue(leafRef, bitPosLeaf, keyValue);
-                    // key already present
-                    return KNOWN_EMPTY_NODE;
-                }
+            if (off == len) {
+                mem[(int) nodeRef + 1 + idx] = keyValue;
+                return KNOWN_EMPTY_NODE;
             } else {
                 // not at leaf, recursion
-                long childNodeRef = value;
+                long childNodeRef = mem[(int) nodeRef + 1 + idx];
                 long newChildNodeRef = set(childNodeRef, key, off, len, keyValue);
                 if (newChildNodeRef == KNOWN_EMPTY_NODE) {
                     return KNOWN_EMPTY_NODE;
@@ -492,29 +372,12 @@ public class BBTrieMap<V> {
         } else {
             // child present
             int idx = Long.bitCount(bitMap & (bitPos - 1));
-            long leafRef = nodeRef + 1 + idx;
-            long value = mem[(int) leafRef];
-            if (off == len - 1) {
-                // at leaf
-                long bitPosLeaf = 1L << key[off];
-                if ((value & bitPosLeaf) == 0) {
-                    // key not present
-                    return KNOWN_EMPTY_NODE;
-                } else {
-                    // clear bit in leaf
-                    deleteValue(leafRef, bitPosLeaf);
-                    value = value & ~bitPosLeaf;
-                    if (value != 0) {
-                        // leaf still has some bits set, keep leaf but update
-                        mem[(int) nodeRef + 1 + idx] = value;
-                        return nodeRef;
-                    } else {
-                        return removeChild(nodeRef, bitMap, bitPosLeaf, idx);
-                    }
-                }
+            if (off == len) {
+                // remove the stored value
+                return removeChild(nodeRef, bitMap, bitPos, idx);
             } else {
                 // not at leaf
-                long childNodeRef = value;
+                long childNodeRef = mem[(int) nodeRef + 1 + idx];
                 long newChildNodeRef = clear(childNodeRef, key, off, len);
                 if (newChildNodeRef == KNOWN_EMPTY_NODE) {
                     return KNOWN_EMPTY_NODE;

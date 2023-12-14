@@ -5,8 +5,8 @@ import java.io.FileReader;
 /** A representation of a context-free grammar built on BBTrieMap. */
 public class CFG {
 
-    int textLength;
-    int numRules;
+    private int textLength;
+    private int numRules;
     private BBTrieMap map;
 
     final static int CHAR_SIZE = 256;
@@ -18,39 +18,39 @@ public class CFG {
     /**
      * Converts an int to a 6 byte key.
      *
-     * @param b The array to store the key in.
+     * @param key The array to store the key in.
      * @param value The int to convert into a key.
      * @return The number of bytes in the key (always 6).
      */
-    public static int set6Int(byte[] b, int value) {
+    public static int set6Int(byte[] key, int value) {
         int pos = 0;
-        b[pos] = (byte) ((value >>> 30) & 0x3F);
-        b[pos + 1] = (byte) ((value >>> 24) & 0x3F);
-        b[pos + 2] = (byte) ((value >>> 18) & 0x3F);
-        b[pos + 3] = (byte) ((value >>> 12) & 0x3F);
-        b[pos + 4] = (byte) ((value >>> 6) & 0x3F);
-        b[pos + 5] = (byte) (value & 0x3F);
+        key[pos] = (byte) ((value >>> 30) & 0x3F);
+        key[pos + 1] = (byte) ((value >>> 24) & 0x3F);
+        key[pos + 2] = (byte) ((value >>> 18) & 0x3F);
+        key[pos + 3] = (byte) ((value >>> 12) & 0x3F);
+        key[pos + 4] = (byte) ((value >>> 6) & 0x3F);
+        key[pos + 5] = (byte) (value & 0x3F);
         return 6;
     }
 
     /**
      * Converts a 6 byte key to its int value.
      *
-     * @param b The key to convert.
+     * @param key The key to convert.
      * @return The int value of the key.
      */
-    public static int get6Int(byte[] b) {
+    public static int get6Int(byte[] key) {
         int pos = 0;
-        return ((b[pos] & 0x3F) << 30) |
-               ((b[pos + 1] & 0x3F) << 24) |
-               ((b[pos + 2] & 0x3F) << 18) |
-               ((b[pos + 3] & 0x3F) << 12) |
-               ((b[pos + 4] & 0x3F) << 6) |
-               (b[pos + 5] & 0x3F);
+        return ((key[pos] & 0x3F) << 30) |
+               ((key[pos + 1] & 0x3F) << 24) |
+               ((key[pos + 2] & 0x3F) << 18) |
+               ((key[pos + 3] & 0x3F) << 12) |
+               ((key[pos + 4] & 0x3F) << 6) |
+               (key[pos + 5] & 0x3F);
     }
 
     final static int MR_REPAIR_CHAR_SIZE = 256;
-    final static int MR_REPAIR_DUMMY_CODE = -1;  // UINT_MAX
+    final static int MR_REPAIR_DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
 
     /*
     public static void printMrRepairRules(int rules[][]) {
@@ -103,7 +103,7 @@ public class CFG {
         rules[buffSize] = new int[startSize];
         int i, j, c, ruleLength;
 
-        // read rules in order they were added to grammar
+        // read rules in order they were added to grammar, i.e. line-by-line
         for (i = MR_REPAIR_CHAR_SIZE; i < buffSize; i++) {
             for (j = 0; ;j++) {
                 c = Integer.parseInt(reader.readLine());
@@ -155,12 +155,11 @@ public class CFG {
     }
 
     /**
-     * Converts MR-Repair grammar rules loaded from a file and converts them into a CFG.
+     * Encodes MR-Repair grammar rules loaded from a file in a BBTrieMap.
      *
-     * NOTE: The given rules are destriyed as they are preocessed.
+     * NOTE: The given rules are destroyed as they are processed.
      *
      * @param cfg The CFG to load the grammar rules into.
-     * @return The grammar that was loaded.
      */
     private static void fromMrRepairRules(CFG cfg, int rules[][]) {
         // initialize recursion variables
@@ -202,6 +201,14 @@ public class CFG {
 
         // delete the rule since it's no longer needed
         rules[ruleIdx] = null;
+    }
+
+    public int textLength() {
+        return textLength;
+    }
+
+    public int numRules() {
+        return numRules;
     }
 
     /**

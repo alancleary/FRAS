@@ -79,12 +79,21 @@ public class BBTrieSample {
         }
         System.out.println();
 
-        // rank-select queries on set1
-        System.out.println("rank-select operation: set1");
+        // predecessor queries on set1
+        System.out.println("predecessor operation: set1");
         test = new int[] { 0, 10, 25, 30, 40, 45, 50, 55, 60, 70 };
         for (int i = 0; i < test.length; i++) {
             len = set6Int(key, test[i]);
             boolean selected = set1.predecessor(key, len);
+            System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
+        }
+        System.out.println();
+
+        // successor queries on set1
+        System.out.println("successor operation: set1");
+        for (int i = 0; i < test.length; i++) {
+            len = set6Int(key, test[i]);
+            boolean selected = set1.successor(key, len);
             System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
         }
         System.out.println();

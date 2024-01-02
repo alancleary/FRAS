@@ -196,7 +196,7 @@ public class BBTrieSet {
             long bitPos = 1L << key[off];
 
             // memoize the node if it has smaller keys
-            if (rank(bitMap, key[off]) > 0) {
+            if (Long.compareUnsigned(Long.lowestOneBit(bitMap), bitPos) < 0) {
                 nearestNodeRef = nodeRef;
                 nearestOff = off;
             }
@@ -217,7 +217,7 @@ public class BBTrieSet {
                     return true;
                 }
                 // check if there's a smaller key in the leaf
-                if (rank(value, key[off]) > 0) {
+                if (Long.compareUnsigned(Long.lowestOneBit(value), bitPosLeaf) < 0) {
                     return predecessor(idx, key, off, len);
                 }
                 // go back to the last node with a bit before the matched bit
@@ -227,22 +227,6 @@ public class BBTrieSet {
                 nodeRef = value;
             }
         }
-    }
-
-    /**
-      * Computes the exclusive [0, i) rank on the given long.
-      *
-      * @param bits The long to compute the rank on.
-      * @param i The position to compute the rank for.
-      * @return The computed rank.
-      */
-    private long rank(long bits, long i) {
-        // HACK: shifting by 64 (i.e. Long.SIZE) is equivalent to shifting by 0 in Java...
-        if (i == 0) {
-            return 0L;
-        }
-        long rankBits = bits << (Long.SIZE - i);
-        return Long.bitCount(rankBits);
     }
 
     /**
@@ -296,7 +280,118 @@ public class BBTrieSet {
       * @return The largest key.
       */
     private byte largestKey(long bitMap) {
-        return (byte)(Long.SIZE - Long.numberOfLeadingZeros(bitMap) - 1);
+        return (byte) (Long.SIZE - Long.numberOfLeadingZeros(bitMap) - 1);
+    }
+
+    /**
+      * Gets the smallest key that is greater than or equal to the given byte key. This is equivalent
+      * to a paired rank-select query on a bit vector, i.e. select(rank(key) + 1).
+      *
+      * @param key The byte key to match that will be updated if a different key is selected.
+      * @param len The length of the byte key.
+      * @return A boolean saying whether or not a key was selected.
+      */
+    public boolean successor(byte[] key, int len) {
+        if (root == KNOWN_EMPTY_NODE) {
+            return false;
+        }
+
+        long nodeRef = root;
+        int off = 0;
+
+        long nearestNodeRef = KNOWN_EMPTY_NODE;
+        int nearestOff = 0;
+
+        for (;;) {
+            long bitMap = mem[(int) nodeRef];
+            long bitPos = 1L << key[off];
+
+            // memoize the node if it has larger keys
+            if (Long.compareUnsigned(Long.highestOneBit(bitMap), bitPos) > 0) {
+                nearestNodeRef = nodeRef;
+                nearestOff = off;
+            }
+
+            // key not found
+            if ((bitMap & bitPos) == 0) {
+                return successor(nearestNodeRef, key, nearestOff, len);
+            }
+
+            long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
+            long value = mem[(int) idx];
+
+            if (++off == len - 1) {
+                // at leaf
+                long bitPosLeaf = 1L << key[off];
+                // key found
+                if ((value & bitPosLeaf) != 0) {
+                    return true;
+                }
+                // check if there's a larger key in the leaf
+                if (Long.compareUnsigned(Long.highestOneBit(value), bitPosLeaf) > 0) {
+                    return successor(idx, key, off, len);
+                }
+                // go back to the last node with a bit after the matched bit
+                return successor(nearestNodeRef, key, nearestOff, len);
+            } else {
+                // child pointer
+                nodeRef = value;
+            }
+        }
+    }
+
+    /**
+      * Selects the smallest key that is larger than the key successor failed to match. Assumes that
+      * the given nodeRef has at least one key that is greater than the given byte key or that it is
+      * the KNOWN_EMPTY_NODE value.
+      *
+      * @param nodeRef The node to start the selection from.
+      * @param key The partially matched byte key that will be updated if a different key is selected.
+      * @param off The offset into the key that corresponds to the nodeRef node.
+      * @param len The length of the byte key.
+      * @return A boolean saying whether or not a key was selected.
+      */
+    private boolean successor(long nodeRef, byte[] key, int off, int len) {
+        // no smaller key exists
+        if (nodeRef == KNOWN_EMPTY_NODE) {
+            return false;
+        }
+
+        long bitMap = mem[(int) nodeRef];
+        long bitPos = 1L << (key[off] + 1);  // +1 because bitMap is exclusive
+
+        // get the smallest key that is greater than the given key
+        long maskedBitMap = bitMap & ~(bitPos - 1);
+        key[off] = smallestKey(maskedBitMap);
+        bitPos = 1L << key[off];
+
+        // nodeRef is a leaf node
+        if (off++ == len - 1) {  // mind the ++
+            return true;
+        }
+
+        // get the smallest key in all remaining nodes
+        nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+        while (off < len - 1) {
+            bitMap = mem[(int) nodeRef];
+            key[off] = smallestKey(bitMap);
+            bitPos = 1L << key[off++];  // mind the ++
+            nodeRef = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+        }
+        // at leaf
+        key[off] = smallestKey(nodeRef);
+
+        return true;
+    }
+
+    /**
+      * Computes the smallest key in the given bitmap.
+      *
+      * @param bitmap The bitmap to compute the smallest key in.
+      * @return The smallest key.
+      */
+    private byte smallestKey(long bitMap) {
+        return (byte) Long.numberOfTrailingZeros(bitMap);
     }
 
     /**

@@ -115,7 +115,7 @@ public class BBTrieSet {
         int size = Long.bitCount(bitMap);
         long newNodeRef = allocateInsert(nodeRef, size + 1, idx + 1);
         mem[(int) newNodeRef] = bitMap | bitPos;
-        mem[(int) newNodeRef+ 1 + idx] = value;
+        mem[(int) newNodeRef + 1 + idx] = value;
         return newNodeRef;
     }
 
@@ -180,7 +180,7 @@ public class BBTrieSet {
       * @param len The length of the byte key.
       * @return A boolean saying whether or not a key was selected.
       */
-    public boolean rankSelect(byte[] key, int len) {
+    public boolean predecessor(byte[] key, int len) {
         if (root == KNOWN_EMPTY_NODE) {
             return false;
         }
@@ -203,7 +203,7 @@ public class BBTrieSet {
 
             // key not found
             if ((bitMap & bitPos) == 0) {
-                return rankSelect(nearestNodeRef, key, nearestOff, len);
+                return predecessor(nearestNodeRef, key, nearestOff, len);
             }
 
             long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
@@ -218,10 +218,10 @@ public class BBTrieSet {
                 }
                 // check if there's a smaller key in the leaf
                 if (rank(value, key[off]) > 0) {
-                    return rankSelect(idx, key, off, len);
+                    return predecessor(idx, key, off, len);
                 }
                 // go back to the last node with a bit before the matched bit
-                return rankSelect(nearestNodeRef, key, nearestOff, len);
+                return predecessor(nearestNodeRef, key, nearestOff, len);
             } else {
                 // child pointer
                 nodeRef = value;
@@ -246,7 +246,7 @@ public class BBTrieSet {
     }
 
     /**
-      * Selects the largest key that is less than the key rankSelect failed to match. Assumes that
+      * Selects the largest key that is less than the key predecessor failed to match. Assumes that
       * the given nodeRef has at least one key that is less than the given byte key or that it is
       * the KNOWN_EMPTY_NODE value.
       *
@@ -256,7 +256,7 @@ public class BBTrieSet {
       * @param len The length of the byte key.
       * @return A boolean saying whether or not a key was selected.
       */
-    private boolean rankSelect(long nodeRef, byte[] key, int off, int len) {
+    private boolean predecessor(long nodeRef, byte[] key, int off, int len) {
         // no smaller key exists
         if (nodeRef == KNOWN_EMPTY_NODE) {
             return false;

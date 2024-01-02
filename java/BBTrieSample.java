@@ -84,7 +84,7 @@ public class BBTrieSample {
         test = new int[] { 0, 10, 25, 30, 40, 45, 50, 55, 60, 70 };
         for (int i = 0; i < test.length; i++) {
             len = set6Int(key, test[i]);
-            boolean selected = set1.rankSelect(key, len);
+            boolean selected = set1.predecessor(key, len);
             System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
         }
         System.out.println();
@@ -238,7 +238,7 @@ public class BBTrieSample {
         for (int i = 0; i < test.length; i++) {
             len = set6Int(key, test[i]);
             try {
-                long selected = map1.rankSelect(key, len);
+                long selected = map1.predecessor(key, len);
                 System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
             } catch (Exception e) {
                 System.out.println(test[i] + " not selected");

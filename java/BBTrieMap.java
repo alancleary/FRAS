@@ -180,7 +180,7 @@ public class BBTrieMap {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    public long rankSelect(byte[] key, int len) throws Exception {
+    public long predecessor(byte[] key, int len) throws Exception {
         if (root == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");
         }
@@ -203,7 +203,7 @@ public class BBTrieMap {
 
             // key not found
             if ((bitMap & bitPos) == 0) {
-                return rankSelect(nearestNodeRef, key, nearestOff, len);
+                return predecessor(nearestNodeRef, key, nearestOff, len);
             }
 
             long idx = nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1));
@@ -236,7 +236,7 @@ public class BBTrieMap {
     }
 
     /**
-      * Selects the largest key that is less than the key rankSelect failed to match and returns its
+      * Selects the largest key that is less than the key predecessor failed to match and returns its
       * value. Assumes that the given nodeRef has at least one key that is less than the given byte
       * key or that it is the KNOWN_EMPTY_NODE value.
       *
@@ -247,7 +247,7 @@ public class BBTrieMap {
       * @return The value stored for the selected key.
       * @throws Exception if a key is not selected.
       */
-    private long rankSelect(long nodeRef, byte[] key, int off, int len) throws Exception {
+    private long predecessor(long nodeRef, byte[] key, int off, int len) throws Exception {
         // no smaller key exists
         if (nodeRef == KNOWN_EMPTY_NODE) {
             throw new Exception("No key to select");

@@ -226,12 +226,12 @@ public class CFG {
         byte[] key = new byte[64];
 
         int len = set6Int(key, i);
-        int selected = (int) map.rankSelect(key, len);
+        int selected = (int) map.predecessor(key, len);
 
         while (selected >= CHAR_SIZE) {
             i = (selected - CHAR_SIZE) + (i - get6Int(key));
             len = set6Int(key, i);
-            selected = (int) map.rankSelect(key, len);
+            selected = (int) map.predecessor(key, len);
         }
 
         return (char) selected;

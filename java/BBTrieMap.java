@@ -393,4 +393,31 @@ public class BBTrieMap {
         }
     }
 
+    /** An interface that represents a methhod to call when visiting leaf nodes in a trie */
+    public interface Visitor {
+        public void visit(byte[] key, int keyLen, long value);
+    }
+
+    public void visit(Visitor visitor, int len) {
+        visit(root, new byte[64], 0, len, visitor);
+    }
+
+    private void visit(long nodeRef, byte[] key, int off, int len, Visitor visitor) {
+        long bitMap = mem[(int) nodeRef];
+        long bits = bitMap;
+        while (bits != 0) {
+            long bitPos = bits & -bits; bits ^= bitPos; // get rightmost bit and clear it
+            int bitNum = Long.numberOfTrailingZeros(bitPos);
+            key[off] = (byte) bitNum;
+
+            long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+
+            if (off == len - 1) {
+                visitor.visit(key, len, value);
+            } else {
+                visit(value, key, off + 1, len, visitor);
+            }
+        }
+    }
+
 }

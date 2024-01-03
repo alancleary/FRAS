@@ -241,13 +241,26 @@ public class BBTrieSample {
         }
         System.out.println();
 
-        // rank-select queries on map1
-        System.out.println("rank-select operation: map1");
+        // predecessor queries on map1
+        System.out.println("predecessor operation: map1");
         test = new int[] { 0, 10, 25, 30, 40, 45, 50, 55, 60, 70 };
         for (int i = 0; i < test.length; i++) {
             len = set6Int(key, test[i]);
             try {
                 long selected = map1.predecessor(key, len);
+                System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
+            } catch (Exception e) {
+                System.out.println(test[i] + " not selected");
+            }
+        }
+        System.out.println();
+
+        // predecessor queries on map1
+        System.out.println("sucessor operation: map1");
+        for (int i = 0; i < test.length; i++) {
+            len = set6Int(key, test[i]);
+            try {
+                long selected = map1.successor(key, len);
                 System.out.println("selected: " + test[i] +" -> " + get6Int(key) + ", " + selected);
             } catch (Exception e) {
                 System.out.println(test[i] + " not selected");

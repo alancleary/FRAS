@@ -502,10 +502,14 @@ public class BBTrieMap {
     }
 
     public void visitRange(Visitor visitor, int begin , int end, int len) {
-        visitRange(begin, end, root, new byte[64], 0, len, visitor);
+        visitRange(visitor, new byte[64], 0, begin, end, len);
     }
 
-    private void visitRange(int begin , int end, long nodeRef, byte[] key, int off, int len, Visitor visitor) {
+    public void visitRange(Visitor visitor, byte[] key, int index, int begin , int end, int len) {
+        visitRange(begin, end, root, key, index, 0, len, visitor);
+    }
+
+    private void visitRange(int begin, int end, long nodeRef, byte[] key, int index, int off, int len, Visitor visitor) {
         // compute key[off] parts for begin and end
         int level = len - (off + 1);
         int x = (int) (begin >>> (level * 6)) & 0x3F;
@@ -521,7 +525,7 @@ public class BBTrieMap {
         while (bits != 0) {
             long bitPos = bits & -bits; bits ^= bitPos;  // get rightmost bit and clear it
             int bitNum = Long.numberOfTrailingZeros(bitPos);
-            key[off] = (byte) bitNum;
+            key[index + off] = (byte) bitNum;
 
             long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
 
@@ -529,13 +533,13 @@ public class BBTrieMap {
                 visitor.visit(key, len, value);
             } else {
                 if (x == y) {
-                    visitRange(begin, end, value, key, off + 1, len, visitor);
+                    visitRange(begin, end, value, key, index, off + 1, len, visitor);
                 } else if (bitNum == x) {
-                    visitRange(begin, ~0x0, value, key, off + 1, len, visitor);
+                    visitRange(begin, ~0x0, value, key, index, off + 1, len, visitor);
                 } else if (bitNum == y) {
-                    visitRange(0, end, value, key, off + 1, len, visitor);
+                    visitRange(0, end, value, key, index, off + 1, len, visitor);
                 } else {
-                    visitRange(0, ~0x0, value, key, off + 1, len, visitor);
+                    visitRange(0, ~0x0, value, key, index, off + 1, len, visitor);
                 }
             }
         }

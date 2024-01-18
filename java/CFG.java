@@ -1,5 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 
 /** A representation of a context-free grammar built on BBTrieMap. */
@@ -7,12 +9,32 @@ public class CFG {
 
     private int textLength;
     private int numRules;
+    private int depth;
     private BBTrieMap map;
 
     final static int CHAR_SIZE = 256;
 
     public CFG() {
         map = new BBTrieMap(100);
+    }
+
+    private class PrintMapVisitor implements BBTrieMap.Visitor {
+
+        public void visit(byte[] key, int len, long value) {
+            int currentKey = get6Int(key);
+
+            if (value < CHAR_SIZE) {
+                System.out.print("(" + currentKey + ": " + ((char) value) + ") ");
+            } else {
+                System.out.print("(" + currentKey + ": " + (value - CHAR_SIZE) + ") ");
+            }
+        }
+    }
+
+    public void printCfg() {
+        PrintMapVisitor v = new PrintMapVisitor();
+        map.visit(v, 6);
+        System.out.println();
     }
 
     /**
@@ -40,7 +62,10 @@ public class CFG {
      * @return The int value of the key.
      */
     public static int get6Int(byte[] key) {
-        int pos = 0;
+        return get6Int(key, 0);
+    }
+
+    public static int get6Int(byte[] key, int pos) {
         return ((key[pos] & 0x3F) << 30) |
                ((key[pos + 1] & 0x3F) << 24) |
                ((key[pos + 2] & 0x3F) << 18) |
@@ -165,13 +190,17 @@ public class CFG {
         // initialize recursion variables
         int startRule = rules.length - 1;
         int ruleSizes[] = new int[rules.length];
+        int ruleDepths[] = new int[rules.length];
         Integer references[] = new Integer[rules.length];
 
         // build CFG recursively from start rule
-        fromMrRepairRules(cfg, rules, startRule, ruleSizes, references, 0);
+        fromMrRepairRules(cfg, rules, startRule, ruleSizes, ruleDepths, references, 0);
+
+        // save the depth
+        cfg.depth = ruleDepths[startRule] - 1;
     }
 
-    private static void fromMrRepairRules(CFG cfg, int rules[][], int ruleIdx, int ruleSizes[], Integer references[], int seqPos) {
+    private static void fromMrRepairRules(CFG cfg, int rules[][], int ruleIdx, int ruleSizes[], int ruleDepths[] , Integer references[], int seqPos) {
         // add the rule to the map
         int rule[] = rules[ruleIdx];
         int c;
@@ -185,18 +214,20 @@ public class CFG {
                 // the character is a terminal
                 if (c < MR_REPAIR_CHAR_SIZE) {
                     ruleSizes[c] = 1;
+                    ruleDepths[c] = 1;
                     references[c] = c;  // MR_REPAIR_CHAR_SIZE == CHAR_SIZE
                     cfg.map.set(key, len, references[c]);
                 // the character is a non-terminal 
                 } else {
                     references[c] = CHAR_SIZE + seqPos;
-                    fromMrRepairRules(cfg, rules, c, ruleSizes, references, seqPos);
+                    fromMrRepairRules(cfg, rules, c, ruleSizes, ruleDepths, references, seqPos);
                 }
             } else {
                 cfg.map.set(key, len, references[c]);
             }
             seqPos += ruleSizes[c];
             ruleSizes[ruleIdx] += ruleSizes[c];
+            ruleDepths[ruleIdx] = Math.max(ruleDepths[ruleIdx], ruleDepths[c] + 1);
         }
 
         // delete the rule since it's no longer needed
@@ -209,6 +240,10 @@ public class CFG {
 
     public int numRules() {
         return numRules;
+    }
+
+    public int depth() {
+        return depth;
     }
 
     /**
@@ -238,28 +273,132 @@ public class CFG {
     }
 
     /**
-      * Gets the substring at position i in the original string.
+      * Gets a substring in the original string.
       *
-      * @param i The position the substring starts at in the original string.
-      * @param len The length of the substring to decode.
-      * @return The decoded substring.
-      * @throws Exception if i is out of bounds.
+      * @param out The output stream to write the substring to.
+      * @param begin The start position of the substring in the original string.
+      * @param end The end position of the substring in the original string.
+      * @throws Exception if begin or end is out of bounds.
       */
+    public void get(OutputStreamWriter out, int begin, int end) throws Exception {
+        if (begin < 0 || end >= textLength || begin > end) {
+            throw new Exception("begin/end out of bounds");
+        }
+
+        byte[] key = new byte[6 * depth()];
+        set6Int(key, begin);
+        int value = (int) map.predecessor(key, 6);
+        int predecessor = get6Int(key);
+        int ignore = begin - predecessor;
+
+        GetVisitor visitor = new GetVisitor(new OutputStreamFilter(out, ignore));
+
+        //get(out, visitor, key, begin, end);
+        getTail(visitor, key, predecessor, end);
+    }
+
     /*
-    public String get(int i, int len) {
-        if (i < 0 || i >= textLength) {
-            throw new Exception("i is out of bounds");
-        }
-        if (i + len > textLength) {
-            len = textLength - i;
-        }
-
-        byte[] key = new byte[64];
-        int len;
-
-        return "a";
+    private void get(OutputStreamWriter out, GetVisitor visitor, byte[] key, int begin, int end) {
+        getHead(out, visitor, key, begin);
+        getTail(visitor, begin, end);
     }
     */
+
+    /** A wrapper around an output stream that ignores a number of characters. */
+    private class OutputStreamFilter {
+
+        private OutputStreamWriter out;
+        private int ignore;
+
+        public OutputStreamFilter(OutputStreamWriter out, int ignore) {
+            this.out = out;
+            this.ignore = ignore;
+        }
+
+        public void write(char c) throws IOException {
+            if (ignore > 0) {
+                ignore--;
+            } else {
+                out.write(c);
+            }
+        }
+    }
+
+    /** Gets the substring up to the first successor of begin, which may be begin itself. */
+    /*
+    public void getHead(OutputStreamWriter out, GetVisitor visitor, byte[] key, int begin) {
+        try {
+            set6Int(key, begin);
+
+            int value = (int) map.predecessor(key, 6);
+            int predecessor = get6Int(key);
+
+            if (predecessor < begin) {
+                set6Int(key, begin);
+                map.successor(key, 6);
+                int successor = get6Int(key);
+                int length = successor - begin - 1;
+                begin = (value - CHAR_SIZE) + (begin - predecessor);
+                get(out, visitor, key, begin, begin + length);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+    */
+
+    private class GetVisitor implements BBTrieMap.Visitor {
+
+        OutputStreamFilter out;
+        int previousKey = -1;
+        int previousValue;
+        int depth = 0;
+
+        //public GetVisitor(OutputStreamWriter out) {
+        public GetVisitor(OutputStreamFilter out) {
+            this.out = out;
+        }
+
+        public void processPrevious(byte[] key, int currentKey) {
+            if (this.previousKey >= 0) {
+                if (this.previousValue < CHAR_SIZE) {
+                    try {
+                        out.write((char) this.previousValue);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return;
+                    }
+                } else {
+                    int begin = this.previousValue - CHAR_SIZE;
+                    int end = begin + (currentKey - this.previousKey) - 1;
+                    this.previousKey = -1;
+                    this.depth += 6;
+                    getTail(this, key, begin, end);
+                    this.depth -= 6;
+                }
+            }
+        }
+
+        public void visit(byte[] key, int len, long value) {
+            int currentKey = get6Int(key, this.depth);
+
+            this.processPrevious(key, currentKey);
+
+            this.previousKey = currentKey;
+            this.previousValue = (int) value;
+        }
+    }
+
+    /** Gets the substring after the head. */
+    private void getTail(GetVisitor visitor, byte[] key, int begin, int end) {
+
+        map.visitRange(visitor, key, visitor.depth, begin, end, 6);
+
+        // process the interval between the last value visited and end
+        visitor.processPrevious(key, end + 1);  // +1 to include the end
+        visitor.previousKey = -1;
+    }
 
 }
 

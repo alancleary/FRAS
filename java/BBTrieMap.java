@@ -501,11 +501,65 @@ public class BBTrieMap {
         }
     }
 
-    public void visitRange(Visitor visitor, int begin , int end, int len) {
+    public long nodeCount(int len) {
+        return nodeCount(root, 0, len);
+    }
+
+    private long nodeCount(long nodeRef, int off, int len) {
+        long bitMap = mem[(int) nodeRef];
+        long count = 1 + Long.bitCount(bitMap);  // this node + child pointers
+        long bits = bitMap;
+        while (bits != 0) {
+            long bitPos = bits & -bits; bits ^= bitPos; // get rightmost bit and clear it
+            int bitNum = Long.numberOfTrailingZeros(bitPos);
+
+            long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+
+            if (off == len - 1) {
+                count += 1;  // +1 for the stored value
+            } else {
+                count += nodeCount(value, off + 1, len);
+            }
+        }
+        return count;
+    }
+
+    public interface TailVisitor {
+        public void visit(byte[] key, int keyLen, long value, int tailLength);
+    }
+
+    public void tailVisit(TailVisitor visitor, int len) {
+        tailVisit(root, new byte[64], 0, len, 0, visitor);
+    }
+
+    private void tailVisit(long nodeRef, byte[] key, int off, int len, int tailLength, TailVisitor visitor) {
+        long bitMap = mem[(int) nodeRef];
+        long bits = bitMap;
+        if (Long.bitCount(bitMap) == 1) {
+            tailLength += 1;
+        } else {
+            tailLength = 0;
+        }
+        while (bits != 0) {
+            long bitPos = bits & -bits; bits ^= bitPos; // get rightmost bit and clear it
+            int bitNum = Long.numberOfTrailingZeros(bitPos);
+            key[off] = (byte) bitNum;
+
+            long value = mem[(int) nodeRef + 1 + Long.bitCount(bitMap & (bitPos - 1))];
+
+            if (off == len - 1) {
+                visitor.visit(key, len, value, tailLength);
+            } else {
+                tailVisit(value, key, off + 1, len, tailLength, visitor);
+            }
+        }
+    }
+
+    public void visitRange(Visitor visitor, int begin, int end, int len) {
         visitRange(visitor, new byte[64], 0, begin, end, len);
     }
 
-    public void visitRange(Visitor visitor, byte[] key, int index, int begin , int end, int len) {
+    public void visitRange(Visitor visitor, byte[] key, int index, int begin, int end, int len) {
         visitRange(begin, end, root, key, index, 0, len, visitor);
     }
 

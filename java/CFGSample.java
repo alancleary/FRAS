@@ -1,3 +1,4 @@
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Random;
 
@@ -13,12 +14,25 @@ public class CFGSample {
             String filename = args[0];
             cfg = CFG.fromMrRepairFile(filename);
             System.err.println("text length: " + cfg.textLength());
+            System.err.println();
             System.err.println("num rules: " + cfg.numRules());
+            System.err.println("start size: " + cfg.startSize());
+            System.err.println("rules size: " + cfg.rulesSize());
+            System.err.println("total size: " + cfg.totalSize());
             System.err.println("depth: " + cfg.depth());
+            System.err.println();
+            System.err.println("map entries: " + cfg.numMapEntries());
+            System.err.println("map size: " + cfg.mapSize());
+            System.err.println("map tail size: " + cfg.mapTailSize());
+            System.err.println();
 
             //cfg.printCfg();
 
             OutputStreamWriter out = new OutputStreamWriter(System.out);
+            //OutputStreamWriter out = new OutputStreamWriter(OutputStream.nullOutputStream());
+
+            //cfg.get(out, 0, 999);
+            //out.flush();
 
             Random r = new Random();
             int begin, end, numQueries = 10000, querySize = 1000;

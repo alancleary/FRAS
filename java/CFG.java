@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.HashMap;
 
 
 /** A representation of a context-free grammar built on BBTrieMap. */
@@ -9,9 +10,12 @@ public class CFG {
 
     private int textLength;
     private int numRules;
+    private int startSize;
+    private int rulesSize;
     private int depth;
     private BBTrieMap map;
 
+    final static int KEY_LENGTH = 6;
     final static int CHAR_SIZE = 256;
 
     public CFG() {
@@ -33,7 +37,7 @@ public class CFG {
 
     public void printCfg() {
         PrintMapVisitor v = new PrintMapVisitor();
-        map.visit(v, 6);
+        map.visit(v, KEY_LENGTH);
         System.out.println();
     }
 
@@ -45,7 +49,10 @@ public class CFG {
      * @return The number of bytes in the key (always 6).
      */
     public static int set6Int(byte[] key, int value) {
-        int pos = 0;
+        return set6Int(key, value, 0);
+    }
+
+    public static int set6Int(byte[] key, int value, int pos) {
         key[pos] = (byte) ((value >>> 30) & 0x3F);
         key[pos + 1] = (byte) ((value >>> 24) & 0x3F);
         key[pos + 2] = (byte) ((value >>> 18) & 0x3F);
@@ -119,13 +126,14 @@ public class CFG {
         // read grammar specs
         cfg.textLength = Integer.parseInt(reader.readLine());
         cfg.numRules = Integer.parseInt(reader.readLine());
-        int startSize = Integer.parseInt(reader.readLine());
+        cfg.startSize = Integer.parseInt(reader.readLine());
+        cfg.rulesSize = 0;
 
         // prepare to read grammar
         //int buff[] = new int[1024];
         int buffSize = cfg.numRules + MR_REPAIR_CHAR_SIZE;
         int rules[][] = new int[buffSize + 1][];  // +1 for start rule
-        rules[buffSize] = new int[startSize];
+        rules[buffSize] = new int[cfg.startSize];
         int i, j, c, ruleLength;
 
         // read rules in order they were added to grammar, i.e. line-by-line
@@ -140,6 +148,7 @@ public class CFG {
                 rules[buffSize][j] = c;
             }
             ruleLength = j;
+            cfg.rulesSize += ruleLength;
             rules[i] = new int[ruleLength];
             for (j = 0; j < ruleLength; j++) {
                 //rules[i][j] = buff[j];
@@ -148,7 +157,7 @@ public class CFG {
         }
 
         // read start rule
-        for (i = 0; i < startSize; i++) {
+        for (i = 0; i < cfg.startSize; i++) {
             rules[buffSize][i] = Integer.parseInt(reader.readLine());
         }
 
@@ -242,8 +251,41 @@ public class CFG {
         return numRules;
     }
 
+    public int startSize() {
+        return startSize;
+    }
+
+    public int rulesSize() {
+        return rulesSize;
+    }
+
+    public int totalSize() {
+        return startSize + rulesSize;
+    }
+
     public int depth() {
         return depth;
+    }
+
+    public long numMapEntries() {
+        return map.size();
+    }
+
+    public long mapSize() {
+        return map.nodeCount(KEY_LENGTH);
+    }
+
+    private class TailVisitor implements BBTrieMap.TailVisitor {
+        int totalTailLength = 0;
+        public void visit(byte[] key, int len, long value, int tailLength) {
+            this.totalTailLength += tailLength;
+        }
+    }
+
+    public int mapTailSize() {
+        TailVisitor visitor = new TailVisitor();
+        map.tailVisit(visitor, KEY_LENGTH);
+        return visitor.totalTailLength * 2;
     }
 
     /**
@@ -258,7 +300,7 @@ public class CFG {
             throw new Exception("i is out of bounds");
         }
 
-        byte[] key = new byte[64];
+        byte[] key = new byte[KEY_LENGTH];
 
         int len = set6Int(key, i);
         int selected = (int) map.predecessor(key, len);
@@ -285,24 +327,17 @@ public class CFG {
             throw new Exception("begin/end out of bounds");
         }
 
-        byte[] key = new byte[6 * depth()];
+        byte[] key = new byte[KEY_LENGTH * depth()];
         set6Int(key, begin);
-        int value = (int) map.predecessor(key, 6);
+        int value = (int) map.predecessor(key, KEY_LENGTH);
         int predecessor = get6Int(key);
         int ignore = begin - predecessor;
 
-        GetVisitor visitor = new GetVisitor(new OutputStreamFilter(out, ignore));
+        OutputStreamFilter filteredOut = new OutputStreamFilter(out, ignore);
+        GetVisitor visitor = new GetVisitor(filteredOut);
 
-        //get(out, visitor, key, begin, end);
-        getTail(visitor, key, predecessor, end);
+        get(visitor, key, predecessor, end);
     }
-
-    /*
-    private void get(OutputStreamWriter out, GetVisitor visitor, byte[] key, int begin, int end) {
-        getHead(out, visitor, key, begin);
-        getTail(visitor, begin, end);
-    }
-    */
 
     /** A wrapper around an output stream that ignores a number of characters. */
     private class OutputStreamFilter {
@@ -324,64 +359,165 @@ public class CFG {
         }
     }
 
-    /** Gets the substring up to the first successor of begin, which may be begin itself. */
-    /*
-    public void getHead(OutputStreamWriter out, GetVisitor visitor, byte[] key, int begin) {
-        try {
-            set6Int(key, begin);
+    /** A simple cache for strings generated by grammar rules. */
+    private class RuleCache {
 
-            int value = (int) map.predecessor(key, 6);
-            int predecessor = get6Int(key);
-
-            if (predecessor < begin) {
-                set6Int(key, begin);
-                map.successor(key, 6);
-                int successor = get6Int(key);
-                int length = successor - begin - 1;
-                begin = (value - CHAR_SIZE) + (begin - predecessor);
-                get(out, visitor, key, begin, begin + length);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return;
+        public static class Entry {
+            char[] chars;
+            int offset;
         }
+
+        // maps rules to the strings they generate
+        HashMap<Integer, char[]> strings = new HashMap<Integer, char[]>();
+        // maps nested rules into the string of a rule they're nested in
+        // value always has length 3: [0] = rule, [1] = start
+        HashMap<Integer, int[]> pointers = new HashMap<Integer, int[]>();
+
+        public void getRule(int rule, Entry entry) {
+            // attempt to get the string
+            entry.chars = strings.get(rule);
+            if (entry.chars != null) {
+                entry.offset = 0;
+                return;
+            }
+
+            // attempt to get a pointer to another string
+            int[] pointer = pointers.get(rule);
+            if (pointer == null) {
+                return;
+            }
+            entry.chars = strings.get(pointer[0]);
+            if (entry.chars == null) {
+                pointers.remove(rule);
+                return;
+            }
+
+            entry.offset = pointer[1];
+        }
+
+        /**
+         * Creates a cache entry for a string generated by a rule. The string is populated outside
+         * of the cache.
+         *
+         * @param rule The rule that generates the string.
+         * @param length The length of the string.
+         * @return The string to be populated.
+         */
+        public char[] putString(int rule, int length) {
+            char[] chars = new char[length];
+            strings.put(rule, chars);
+            return chars;
+        }
+
+        /**
+         * Removes the cache entry for a string generated by a rule..
+         *
+         * @param rule The rule that generates the string.
+         * @return The string removed from the cache.
+         */
+        public char[] popString(int rule) {
+            return strings.remove(rule);
+        }
+
+        /**
+         * Creates an entry pointing to a string already in the cache.
+         *
+         * @param rule The rule that generates the string.
+         * @param length The length of the string.
+         * @return The string.
+         */
+        public void putPointer(int rule, int reference, int start) {
+            pointers.put(rule, new int[]{reference, start});
+        }
+
     }
-    */
 
     private class GetVisitor implements BBTrieMap.Visitor {
 
         OutputStreamFilter out;
+
+        RuleCache cache = new RuleCache();
+        RuleCache.Entry cacheEntry = new RuleCache.Entry();
+        int currentlyCaching;
+        char[] currentCache;
+        int currentCachePosition;
+
         int previousKey = -1;
         int previousValue;
-        int depth = 0;
+        int keyOffset = 0;
 
         //public GetVisitor(OutputStreamWriter out) {
         public GetVisitor(OutputStreamFilter out) {
             this.out = out;
         }
 
-        public void processPrevious(byte[] key, int currentKey) {
-            if (this.previousKey >= 0) {
-                if (this.previousValue < CHAR_SIZE) {
-                    try {
-                        out.write((char) this.previousValue);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                } else {
-                    int begin = this.previousValue - CHAR_SIZE;
-                    int end = begin + (currentKey - this.previousKey) - 1;
-                    this.previousKey = -1;
-                    this.depth += 6;
-                    getTail(this, key, begin, end);
-                    this.depth -= 6;
+        private void newCacheEntry(int rule, int length) {
+            if (this.currentCache == null) {
+                this.currentlyCaching = rule;
+                this.currentCache = this.cache.putString(rule, length);
+                this.currentCachePosition = 0;
+            } else {
+                this.cache.putPointer(rule, this.currentlyCaching, this.currentCachePosition);
+            }
+        }
+
+        private void writeChar(char c) {
+            try {
+                this.out.write(c);
+                if (this.currentCache != null) {
+                    this.currentCache[this.currentCachePosition++] = (char) this.previousValue;
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void processPrevious(byte[] key, int currentKey) {
+            // no rule to process
+            if (this.previousKey < 0) {
+                return;
+            }
+
+            // the rule is a terminal character
+            if (this.previousValue < CHAR_SIZE) {
+                this.writeChar((char) this.previousValue);
+                return;
+            }
+
+            // the rule is cached
+            this.cache.getRule(this.previousValue, this.cacheEntry);
+            int length = currentKey - this.previousKey;
+            if (this.cacheEntry.chars != null) {
+                int i = 0;
+                for (; i < Math.min(length, this.cacheEntry.chars.length - this.cacheEntry.offset); i++) {
+                    this.writeChar(this.cacheEntry.chars[this.cacheEntry.offset + i]);
+                }
+                if (i < length) {
+                    this.previousKey += i;
+                    this.previousValue += i;
+                    this.processPrevious(key, currentKey);
+                }
+            } else {
+                // create a new cache entry and recursively generate the string
+                int begin = this.previousValue - CHAR_SIZE;
+                int end = begin + length - 1;
+
+                this.newCacheEntry(this.previousValue, length);
+
+                this.previousKey = -1;
+                this.keyOffset += KEY_LENGTH;
+                get(this, key, begin, end);
+                this.keyOffset -= KEY_LENGTH;
+            }
+
+            // only non-terminals in the start rule are cached directly
+            if (this.keyOffset == 0) {
+                this.currentCache = null;
             }
         }
 
         public void visit(byte[] key, int len, long value) {
-            int currentKey = get6Int(key, this.depth);
+            int currentKey = get6Int(key, this.keyOffset);
 
             this.processPrevious(key, currentKey);
 
@@ -391,9 +527,9 @@ public class CFG {
     }
 
     /** Gets the substring after the head. */
-    private void getTail(GetVisitor visitor, byte[] key, int begin, int end) {
+    private void get(GetVisitor visitor, byte[] key, int begin, int end) {
 
-        map.visitRange(visitor, key, visitor.depth, begin, end, 6);
+        map.visitRange(visitor, key, visitor.keyOffset, begin, end, KEY_LENGTH);
 
         // process the interval between the last value visited and end
         visitor.processPrevious(key, end + 1);  // +1 to include the end

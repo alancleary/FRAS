@@ -1,7 +1,8 @@
 #include <iostream>
 #include <chrono>
 #include <random>
-#include "cfg-amt/cfg.hpp"
+//#include "cfg-amt/cfg.hpp"
+#include "cfg-amt/indexed-cfg.hpp"
 
 using namespace std;
 using namespace cfg_amt;
@@ -22,7 +23,7 @@ int main(int argc, char* argv[])
 
     // load the grammar
     string filepath = argv[1];
-    CFG* cfg = CFG::fromMrRepairFile(filepath);
+    IndexedCFG* cfg = IndexedCFG::fromMrRepairFile(filepath);
     cerr << "text length: " << cfg->getTextLength() << endl;
     cerr << endl;
     cerr << "num rules: " << cfg->getNumRules() << endl;

@@ -14,12 +14,11 @@ class IndexedCFG
 private:
 
     static const int KEY_LENGTH = 6;
-    static const int CHAR_SIZE = 256;
+    static const int ALPHABET_SIZE = 256;
 
-    static const int MR_REPAIR_CHAR_SIZE = 256;
-    static const int MR_REPAIR_DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
+    static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
 
-    int textLength;
+    unsigned int textLength;
     int numRules;
     int startSize;
     int rulesSize;
@@ -42,12 +41,32 @@ public:
      */
     static IndexedCFG* fromMrRepairFile(std::string filename);
 
-    int getTextLength() { return textLength; }
-    int getNumRules() { return numRules; }
-    int getStartSize() { return startSize; }
-    int getRulesSize() { return rulesSize; }
-    int getTotalSize() { return startSize + rulesSize; }
-    //int getDepth() { return depth; }
+    /**
+     * Loads a grammar from Navarro files.
+     *
+     * @param filenameC The grammar's C file.
+     * @param filenameR The grammar's R file.
+     * @return The grammar that was loaded.
+     * @throws Exception if the files cannot be read.
+     */
+    static IndexedCFG* fromNavarroFiles(std::string filenameC, std::string filenameR);
+
+    /**
+     * Loads a grammar from Big-Repair files.
+     *
+     * @param filenameC The grammar's C file.
+     * @param filenameR The grammar's R file.
+     * @return The grammar that was loaded.
+     * @throws Exception if the files cannot be read.
+     */
+    static IndexedCFG* fromBigRepairFiles(std::string filenameC, std::string filenameR);
+
+    unsigned int getTextLength() const { return textLength; }
+    int getNumRules() const { return numRules; }
+    int getStartSize() const { return startSize; }
+    int getRulesSize() const { return rulesSize; }
+    int getTotalSize() const { return startSize + rulesSize; }
+    int getDepth() const { return depth; }
     uint64_t getNumMapEntries() { return map.size(); }
 
     /**

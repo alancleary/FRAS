@@ -7,30 +7,49 @@
 using namespace std;
 using namespace cfg_amt;
 
-
 void usage(int argc, char* argv[]) {
-    cerr << "Usage: " << argv[0] << " <MR_REPAIR_CFG>" << endl;
+    cerr << "usage: " << argv[0] << " <type> <filename>" << endl;
+    cerr << endl;
+    cerr << "args: " << endl;
+    cerr << "\ttype={mrrepair|navarro|bigrepair}: the type of grammar to load" << endl;
+    cerr << "\t\tmrrepair: for grammars created with the MR-RePair algorithm" << endl;
+    cerr << "\t\tnavarro: for grammars created with Navarro's implementation of RePair" << endl;
+    cerr << "\t\tbigrepair: for grammars created with Manzini's implementation of Big-Repair" << endl;
+    cerr << "\tfilename: the name of the grammar file(s) without the extension(s)" << endl;
+}
+
+IndexedCFG* loadGrammar(string type, string filename) {
+    if (type == "mrrepair") {
+        return IndexedCFG::fromMrRepairFile(filename + ".out");
+    } else if (type == "navarro") {
+        return IndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
+    } else if (type == "bigrepair") {
+        return IndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+    }
+    cerr << "invalid grammar type: \"" << type << "\"" << endl;
+    cerr << endl;
+    return NULL;
 }
 
 int main(int argc, char* argv[])
 {
 
     // check the command-line arguments
-    if (argc < 2) {
+    if (argc < 3) {
       usage(argc, argv);
       return 1;
     }
 
     // load the grammar
-    string filepath = argv[1];
-    IndexedCFG* cfg = IndexedCFG::fromMrRepairFile(filepath);
+    string type = argv[1];
+    string filename = argv[2];
+    IndexedCFG* cfg = loadGrammar(type, filename);
     cerr << "text length: " << cfg->getTextLength() << endl;
-    cerr << endl;
     cerr << "num rules: " << cfg->getNumRules() << endl;
     cerr << "start size: " << cfg->getStartSize() << endl;
     cerr << "rules size: " << cfg->getRulesSize() << endl;
     cerr << "total size: " << cfg->getTotalSize() << endl;
-    //cerr << "depth: " << cfg->getDepth() << endl;
+    cerr << "depth: " << cfg->getDepth() << endl;
     cerr << endl;
     cerr << "map entries: " << cfg->getNumMapEntries() << endl;
     cerr << endl;

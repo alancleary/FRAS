@@ -15,6 +15,7 @@ Map::Map(int size): currentSize(size)
     freeIdx = Map::HEADER_SIZE;
     root = Map::KNOWN_EMPTY_NODE;
     count = 0;
+    nodeCount = 0;
 }
 
 // destruction
@@ -113,12 +114,14 @@ uint64_t Map::createLeaf(uint8_t* key, int off, int len, uint64_t keyValue)
     int a = (int) newNodeRef;
     mem[a++] = ((uint64_t) 1) << key[len - 1];
     mem[a] = keyValue;
+    nodeCount += 2;
     len -= 2;
     while (len >= off) {
         uint64_t newParentNodeRef = allocate(2);
         a = (int) newParentNodeRef;
         mem[a++] = ((uint64_t) 1) << key[len--];
         mem[a] = newNodeRef;
+        nodeCount += 2;
         newNodeRef = newParentNodeRef;
     }
     return newNodeRef;
@@ -130,6 +133,7 @@ uint64_t Map::insertChild(uint64_t nodeRef, uint64_t bitMap, uint64_t bitPos, in
     uint64_t newNodeRef = allocateInsert(nodeRef, size + 1, idx + 1);
     mem[(int) newNodeRef] = bitMap | bitPos;
     mem[(int) newNodeRef + 1 + idx] = value;
+    nodeCount += 1;
     return newNodeRef;
 }
 
@@ -144,6 +148,7 @@ uint64_t Map::removeChild(uint64_t nodeRef, uint64_t bitMap, uint64_t bitPos, in
     } else {
         // node is now empty, remove it
         deallocate(nodeRef, size + 1);
+        nodeCount -= 1;
         return Map::KNOWN_DELETED_NODE;
     }
 }
@@ -451,39 +456,39 @@ void Map::visitRange(MapVisitor& visitor, uint32_t begin, uint32_t end, int len,
 
 void Map::visitRange(MapVisitor& visitor, uint32_t begin, uint32_t end, int len, uint8_t* key, int pos, uint64_t nodeRef, int off)
 {
-        // compute key[off] parts for begin and end
-        int level = len - (off + 1);
-        uint8_t x = (uint8_t) (begin >> (level * 6)) & 0x3F;
-        uint8_t y = (uint8_t) (end >> (level * 6)) & 0x3F;
+    // compute key[off] parts for begin and end
+    int level = len - (off + 1);
+    uint8_t x = (uint8_t) (begin >> (level * 6)) & 0x3F;
+    uint8_t y = (uint8_t) (end >> (level * 6)) & 0x3F;
 
-        // create a bitmap for masking values outside the range
-        uint64_t bitMask = ((uint64_t) 1) << y;
-        bitMask |= bitMask - 1;
-        bitMask &= ~((((uint64_t) 1) << x) - 1);
+    // create a bitmap for masking values outside the range
+    uint64_t bitMask = ((uint64_t) 1) << y;
+    bitMask |= bitMask - 1;
+    bitMask &= ~((((uint64_t) 1) << x) - 1);
 
-        uint64_t bitMap = mem[(int) nodeRef];
-        uint64_t bits = bitMap & bitMask;
-        while (bits != 0) {
-            uint64_t bitPos = bits & -bits; bits ^= bitPos;  // get rightmost bit and clear it
-            uint8_t bitNum = std::countr_zero(bitPos);
-            key[pos + off] = bitNum;
+    uint64_t bitMap = mem[(int) nodeRef];
+    uint64_t bits = bitMap & bitMask;
+    while (bits != 0) {
+        uint64_t bitPos = bits & -bits; bits ^= bitPos;  // get rightmost bit and clear it
+        uint8_t bitNum = std::countr_zero(bitPos);
+        key[pos + off] = bitNum;
 
-            uint64_t value = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
+        uint64_t value = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
 
-            if (off == len - 1) {
-                visitor.visit(key, len, value);
+        if (off == len - 1) {
+            visitor.visit(key, len, value);
+        } else {
+            if (x == y) {
+                visitRange(visitor, begin, end, len, key, pos, value, off + 1);
+            } else if (bitNum == x) {
+                visitRange(visitor, begin, ~0x0, len, key, pos, value, off + 1);
+            } else if (bitNum == y) {
+                visitRange(visitor, 0, end, len, key, pos, value, off + 1);
             } else {
-                if (x == y) {
-                    visitRange(visitor, begin, end, len, key, pos, value, off + 1);
-                } else if (bitNum == x) {
-                    visitRange(visitor, begin, ~0x0, len, key, pos, value, off + 1);
-                } else if (bitNum == y) {
-                    visitRange(visitor, 0, end, len, key, pos, value, off + 1);
-                } else {
-                    visitRange(visitor, 0, ~0x0, len, key, pos, value, off + 1);
-                }
+                visitRange(visitor, 0, ~0x0, len, key, pos, value, off + 1);
             }
         }
     }
+}
 
 }

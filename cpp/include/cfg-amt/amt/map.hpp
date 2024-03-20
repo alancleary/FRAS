@@ -31,6 +31,7 @@ private:
 
     uint64_t root;
     uint64_t count;
+    uint64_t nodeCount;
 
     uint64_t allocate(int size);
     uint64_t allocateInsert(uint64_t nodeIdx, int size, int childIdx);
@@ -58,6 +59,7 @@ public:
     ~Map();
 
     uint64_t size() { return count; }
+    uint64_t nodeSize() { return nodeCount; }
 
     /**
       * Adds the given key-value to the map or updates the value if the key already exists.

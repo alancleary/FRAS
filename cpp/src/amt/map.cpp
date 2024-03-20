@@ -491,4 +491,35 @@ void Map::visitRange(MapVisitor& visitor, uint32_t begin, uint32_t end, int len,
     }
 }
 
+void Map::visitTails(MapTailVisitor& visitor, int len)
+{
+    uint8_t* key = new uint8_t[64];
+    visitTails(visitor, len, root, key, 0, 0);
+    delete[] key;
+}
+
+void Map::visitTails(MapTailVisitor& visitor, int len, uint64_t nodeRef, uint8_t* key, int off, int tailLen)
+{
+    uint64_t bitMap = mem[(int) nodeRef];
+    if (std::popcount(bitMap) > 1) {
+        tailLen += 1;
+    } else {
+        tailLen = 0;
+    }
+    uint64_t bits = bitMap;
+    while (bits != 0) {
+        uint64_t bitPos = bits & -bits; bits ^= bitPos;  // get rightmost bit and clear it
+        int bitNum = std::countr_zero(bitPos);
+        key[off] = (uint8_t) bitNum;
+
+        uint64_t value = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
+
+        if (off == len - 1) {
+            visitor.visit(key, len, value, tailLen);
+        } else {
+            visitTails(visitor, len, value, key, off + 1, tailLen);
+        }
+    }
+}
+
 }

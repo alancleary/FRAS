@@ -6,8 +6,6 @@
 #include "cfg-amt/amt/key.hpp"
 #include "cfg-amt/indexed-cfg.hpp"
 
-#include <iostream>
-
 namespace cfg_amt {
 
 // construction
@@ -297,7 +295,6 @@ IndexedCFG* IndexedCFG::fromBigRepairFiles(std::string filenameC, std::string fi
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->textLength = pos;
-    std::cout << "textLength: " << pos << std::endl;
     cfg->rules[cfg->startRule][i] = IndexedCFG::DUMMY_CODE;
 
     // clean up
@@ -305,6 +302,24 @@ IndexedCFG* IndexedCFG::fromBigRepairFiles(std::string filenameC, std::string fi
     delete[] ruleDepths;
 
     return cfg;
+}
+
+// compute tail compression
+
+
+std::pair<int, int> IndexedCFG::tailInfo()
+{
+    TailCompressionVisitor visitor;
+    this->map.visitTails(visitor, 6);
+    return std::make_pair(visitor.totalTails, visitor.totalNodes);
+}
+
+void IndexedCFG::TailCompressionVisitor::visit(uint8_t* key, int len, uint64_t value, int tailLen)
+{
+    if (tailLen > 0) {
+        this->totalTails += 1;
+        this->totalNodes += ((tailLen * 2) - 1);
+    }
 }
 
 // random access

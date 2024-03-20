@@ -11,6 +11,12 @@ public:
     virtual void visit(uint8_t* key, int keyLen, uint64_t value) = 0;
 };
 
+class MapTailVisitor
+{
+public:
+    virtual void visit(uint8_t* key, int keyLen, uint64_t value, int tailLen) = 0;
+};
+
 /** A map implemented as a bitwise trie with a bitmap. */
 class Map
 {
@@ -52,6 +58,7 @@ private:
 
     void visit(MapVisitor& visitor, int len, uint64_t nodeRef, uint8_t* key, int off);
     void visitRange(MapVisitor& visitor, uint32_t begin, uint32_t end, int len, uint8_t* key, int pos, uint64_t nodeRef, int off);
+    void visitTails(MapTailVisitor& visitor, int len, uint64_t nodeRef, uint8_t* key, int off, int tailLen);
 
 public:
 
@@ -140,6 +147,13 @@ public:
       * @param pos The position to use in the key.
       */
     void visitRange(MapVisitor& visitor, uint32_t begin, uint32_t end, int len, uint8_t* key, int pos);
+
+    /**
+      * Visitirs every key-value pair in the map and reports the length of the tail.
+      * @param visitor The class that will visit every key-value pair.
+      * @param len The length of keys in the map.
+      */
+    void visitTails(MapTailVisitor& visitor, int len);
 
 };
 

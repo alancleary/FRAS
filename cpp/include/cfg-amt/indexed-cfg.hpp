@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <string>
+#include <utility>  // std::pair, std::make_pair
 #include "cfg-amt/amt/map.hpp"
 
 namespace cfg_amt {
@@ -12,6 +13,15 @@ class IndexedCFG
 {
 
 private:
+
+    class TailCompressionVisitor : public MapTailVisitor
+    {
+    public:
+        unsigned int totalTails = 0;
+        unsigned int totalNodes = 0;
+
+        void visit(uint8_t* key, int len, uint64_t value, int tailLen);
+    };
 
     static const int KEY_LENGTH = 6;
     static const int ALPHABET_SIZE = 256;
@@ -68,6 +78,8 @@ public:
     int getTotalSize() const { return startSize + rulesSize; }
     int getDepth() const { return depth; }
     uint64_t getNumMapEntries() { return map.size(); }
+    uint64_t getMapSize() { return map.nodeSize(); }
+    std::pair<int, int> tailInfo();
 
     /**
       * Gets a substring in the original string.

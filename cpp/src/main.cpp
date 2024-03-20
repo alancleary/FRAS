@@ -52,6 +52,11 @@ int main(int argc, char* argv[])
     cerr << "depth: " << cfg->getDepth() << endl;
     cerr << endl;
     cerr << "map entries: " << cfg->getNumMapEntries() << endl;
+    cerr << "map size: " << cfg->getMapSize() << endl;
+    cerr << endl;
+    auto tailInfo = cfg->tailInfo();
+    cerr << "map num tails: " << tailInfo.first << endl;
+    cerr << "map total tail nodes: " << tailInfo.second << endl;
     cerr << endl;
     
     // generate the original text

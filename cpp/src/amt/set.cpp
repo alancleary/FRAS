@@ -4,7 +4,36 @@
 #include "cfg-amt/amt/key.hpp"
 #include "cfg-amt/amt/set.hpp"
 
+#include <iostream>
+
 namespace cfg_amt {
+
+void Set::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
+{
+    uint64_t bitMap = mem[(int) nodeRef];
+    if (bitMap == 0) {
+        return;
+    }
+    uint64_t bits = bitMap;
+    while (bits != 0) {
+        uint64_t bitPos = bits & -bits; bits ^= bitPos; // get rightmost bit and clear it
+        int bitNum = std::countr_zero(bitPos);
+        key[off] = (uint8_t) bitNum;
+        if (off == len - 2) {
+            uint64_t value = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
+            uint64_t bits2 = value;
+            while (bits2 != 0) {
+                uint64_t bitPos2 = bits2 & -bits2; bits2 ^= bitPos2;
+                int bitNum2 = std::countr_zero(bitPos2);
+                key[off+1] = (uint8_t) bitNum2;
+                std::cerr << "key: " << get6Int(key) << std::endl;
+            }
+        } else {
+            uint64_t childNode = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
+            tmp(childNode, key, off + 1, len);
+        }
+    }
+}
 
 // construction
 

@@ -19,11 +19,11 @@ private:
     static const int HEADER_SIZE = 2;  // KNOWN_EMPTY_NODE, KNOWN_DELETED_NODE
 
     int currentSize;
-    uint64_t* mem;
+    //uint64_t* mem;
     uint64_t* freeLists;
-    uint64_t freeIdx;
+    //uint64_t freeIdx;
 
-    uint64_t root;
+    //uint64_t root;
     uint64_t count;
 
     uint64_t allocate(int size);
@@ -44,6 +44,13 @@ private:
     uint64_t highestOneBit(uint64_t value);
 
 public:
+
+    void tmp(uint64_t nodeRef, uint8_t* key, int off, int len);
+
+    // TODO: make private
+    uint64_t* mem;
+    uint64_t root;
+    uint64_t freeIdx;
 
     Set(int size);
     ~Set();

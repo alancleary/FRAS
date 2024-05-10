@@ -92,6 +92,7 @@ IndexedCFG* IndexedCFG::fromMrRepairFile(std::string filename)
     cfg->rules[cfg->startRule][i] = IndexedCFG::DUMMY_CODE;
 
     // clean up
+    delete[] key;
     delete[] ruleSizes;
     delete[] ruleDepths;
 
@@ -196,6 +197,7 @@ IndexedCFG* IndexedCFG::fromNavarroFiles(std::string filenameC, std::string file
     cfg->rules[cfg->startRule][i] = IndexedCFG::DUMMY_CODE;
 
     // clean up
+    delete[] key;
     delete[] ruleSizes;
     delete[] ruleDepths;
 
@@ -298,6 +300,7 @@ IndexedCFG* IndexedCFG::fromBigRepairFiles(std::string filenameC, std::string fi
     cfg->rules[cfg->startRule][i] = IndexedCFG::DUMMY_CODE;
 
     // clean up
+    delete[] key;
     delete[] ruleSizes;
     delete[] ruleDepths;
 

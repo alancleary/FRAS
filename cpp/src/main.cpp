@@ -2,7 +2,10 @@
 #include <chrono>
 #include <random>
 //#include "cfg-amt/cfg.hpp"
-#include "cfg-amt/indexed-cfg.hpp"
+#include "cfg-amt/compressed-indexed-cfg.hpp"
+//#include "cfg-amt/indexed-cfg.hpp"
+
+#include "cfg-amt/amt/key.hpp"
 
 using namespace std;
 using namespace cfg_amt;
@@ -18,13 +21,16 @@ void usage(int argc, char* argv[]) {
     cerr << "\tfilename: the name of the grammar file(s) without the extension(s)" << endl;
 }
 
-IndexedCFG* loadGrammar(string type, string filename) {
+CompressedIndexedCFG* loadGrammar(string type, string filename) {
     if (type == "mrrepair") {
-        return IndexedCFG::fromMrRepairFile(filename + ".out");
+        //return IndexedCFG::fromMrRepairFile(filename + ".out");
+        return CompressedIndexedCFG::fromMrRepairFile(filename + ".out");
     } else if (type == "navarro") {
-        return IndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
+        //return IndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
+        return CompressedIndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
     } else if (type == "bigrepair") {
-        return IndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+        //return IndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+        return CompressedIndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
     }
     cerr << "invalid grammar type: \"" << type << "\"" << endl;
     cerr << endl;
@@ -43,7 +49,9 @@ int main(int argc, char* argv[])
     // load the grammar
     string type = argv[1];
     string filename = argv[2];
-    IndexedCFG* cfg = loadGrammar(type, filename);
+    //IndexedCFG* cfg = loadGrammar(type, filename);
+    CompressedIndexedCFG* cfg = loadGrammar(type, filename);
+    /*
     cerr << "text length: " << cfg->getTextLength() << endl;
     cerr << "num rules: " << cfg->getNumRules() << endl;
     cerr << "start size: " << cfg->getStartSize() << endl;
@@ -82,6 +90,10 @@ int main(int argc, char* argv[])
     }
 
     cerr << "average query time: " << duration / numQueries << "[µs]" << endl;
+
+    delete cfg;
+    delete compressedCfg;
+    */
 
     return 1;
 }

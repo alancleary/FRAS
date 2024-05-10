@@ -45,7 +45,7 @@ private:
 
 public:
 
-    void tmp(Set& set, uint64_t nodeRef, uint8_t* key, int off, int len);
+    void tmp(uint64_t nodeRef, uint8_t* key, int off, int len);
 
     CompressedSumSet(Set& set, int len, GetKey getKey);
     ~CompressedSumSet();

@@ -11,6 +11,9 @@ namespace cfg_amt {
 Set::Set(int size): currentSize(size) {
     mem = new uint64_t[currentSize];
     freeLists = new uint64_t[Set::FREE_LIST_SIZE];
+    for (int i = 0; i < Set::FREE_LIST_SIZE; i++) {
+        freeLists[i] = 0;
+    }
     freeIdx = Set::HEADER_SIZE;
     root = Set::KNOWN_EMPTY_NODE;
     count = 0;
@@ -41,6 +44,7 @@ uint64_t Set::allocate(int size) {
                 newMem[i] = mem[i];
             }
             delete[] mem;
+            mem = newMem;
             currentSize = newSize;
         }
         uint64_t idx = freeIdx;

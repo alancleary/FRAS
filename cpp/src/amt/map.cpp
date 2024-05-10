@@ -12,6 +12,9 @@ Map::Map(int size): currentSize(size)
 {
     mem = new uint64_t[currentSize];
     freeLists = new uint64_t[Map::FREE_LIST_SIZE];
+    for (int i = 0; i < Map::FREE_LIST_SIZE; i++) {
+        freeLists[i] = 0;
+    }
     freeIdx = Map::HEADER_SIZE;
     root = Map::KNOWN_EMPTY_NODE;
     count = 0;

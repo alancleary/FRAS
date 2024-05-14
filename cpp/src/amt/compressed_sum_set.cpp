@@ -11,20 +11,25 @@ namespace cfg_amt {
 void CompressedSumSet::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
 {
     uint64_t bitMap = mem[(int) nodeRef];
-    if (bitMap == 0) {
+    if (bitMap == 0 && !compressed[(int) nodeRef]) {
         return;
     }
     if (compressed[(int) nodeRef]) {
-        std::cerr << "ckey: " << bitMap << std::endl;
+        std::cerr << "ckey (compressed): " << bitMap << std::endl;
+        std::cerr << "sum : " << compressed[(int) nodeRef + 1] << std::endl;
         return;
     }
     uint64_t bits = bitMap;
+    int numChildren = std::popcount(bitMap);
     while (bits != 0) {
         uint64_t bitPos = bits & -bits; bits ^= bitPos; // get rightmost bit and clear it
         int bitNum = std::countr_zero(bitPos);
         key[off] = (uint8_t) bitNum;
         if (off == len - 2) {
-            uint64_t value = mem[(int) nodeRef + 1 + std::popcount(bitMap & (bitPos - 1))];
+            uint64_t idx = nodeRef + 1 + std::popcount(bitMap & (bitPos - 1));
+            uint64_t value = mem[(int) idx];
+            uint64_t sum = mem[(int) idx + numChildren];
+            std::cerr << "sum: " << sum << std::endl;
             uint64_t bits2 = value;
             while (bits2 != 0) {
                 uint64_t bitPos2 = bits2 & -bits2; bits2 ^= bitPos2;
@@ -46,6 +51,7 @@ CompressedSumSet::CompressedSumSet(Set& set, int len, GetKey getKey): getKey(get
     set.tmp(set.root, key, 0, 6);
     // initial values
     memSize = 0;
+    leafCount = 0;
     root = CompressedSumSet::KNOWN_EMPTY_NODE;
     // pre-compute the memory required
     computeCompressedSize(set, len);
@@ -124,6 +130,7 @@ void CompressedSumSet::construct(Set& set, int len)
         compressed[idx] = true;
     }
     std::cerr << "idx: " << idx << std::endl;
+    std::cerr << "sum: " << sum << std::endl;
     delete[] key;
 }
 
@@ -133,7 +140,12 @@ int CompressedSumSet::construct(Set& set, int len, uint64_t nodeRef, uint8_t* ke
     int nodeIdx = idx;
     int childIdx = idx + 1;
     int numChildren = std::popcount(bitMap);
-    idx += numChildren + 1;
+    if (off == len - 2) {
+        // add space for partial sums
+        idx += (2 * numChildren) + 1;
+    } else {
+        idx += numChildren + 1;
+    }
     bool isTail = numChildren == 1;  // there's only one bit set
     // iterate the set bits
     uint64_t bits = bitMap;
@@ -151,6 +163,10 @@ int CompressedSumSet::construct(Set& set, int len, uint64_t nodeRef, uint8_t* ke
             // add the leaf as the child
             mem[childIdx] = value;
             compressed[childIdx] = false;
+            // add the sum for the leaf and add the leaf's count to the sum
+            mem[childIdx + numChildren] = sum;
+            compressed[childIdx + numChildren] = false;
+            sum += std::popcount(value);
         } else {
             // add a pointer to the child index
             mem[childIdx] = idx;
@@ -163,8 +179,16 @@ int CompressedSumSet::construct(Set& set, int len, uint64_t nodeRef, uint8_t* ke
             // the descendants are a compressible tail but nodeRef branches
             } else if (tailLen > 0) {
                 mem[mem[childIdx]] = getKey(key);
+                mem[mem[childIdx + 1]] = sum;
+                sum += 1;
                 compressed[mem[childIdx]] = true;
-                idx = idx - (2 * tailLen) + 3;
+                compressed[mem[childIdx + 1]] = false;
+                // idk - ((2 * tailLen) - 1) + 2 + 1
+                // idx: starts at the index after the non-compressed tail
+                // (2 * tailLen) - 1: the nodes and nodeRefs of the tail; -1 because the last node doesn't have a nodeRef
+                // + 2: a node to store the tail-compressed value and a nodeRef that points to it
+                // + 1: the partial sum value for the tail
+                idx = idx - (2 * tailLen) + 4;
             }
         }
         childIdx++;

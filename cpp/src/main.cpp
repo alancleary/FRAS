@@ -51,13 +51,13 @@ int main(int argc, char* argv[])
     string filename = argv[2];
     //IndexedCFG* cfg = loadGrammar(type, filename);
     CompressedIndexedCFG* cfg = loadGrammar(type, filename);
-    /*
     cerr << "text length: " << cfg->getTextLength() << endl;
     cerr << "num rules: " << cfg->getNumRules() << endl;
     cerr << "start size: " << cfg->getStartSize() << endl;
     cerr << "rules size: " << cfg->getRulesSize() << endl;
     cerr << "total size: " << cfg->getTotalSize() << endl;
     cerr << "depth: " << cfg->getDepth() << endl;
+    /*
     cerr << endl;
     cerr << "map entries: " << cfg->getNumMapEntries() << endl;
     cerr << "map size: " << cfg->getMapSize() << endl;

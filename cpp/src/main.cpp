@@ -66,6 +66,7 @@ int main(int argc, char* argv[])
     cerr << "map num tails: " << tailInfo.first << endl;
     cerr << "map total tail nodes: " << tailInfo.second << endl;
     cerr << endl;
+    */
     
     // generate the original text
     //cfg->get(cout, 0, cfg->getTextLength() - 1);
@@ -79,6 +80,7 @@ int main(int argc, char* argv[])
     uniform_int_distribution<uint32_t> distr(0, cfg->getTextLength() - querySize);
     uint32_t begin, end;
 
+    //cout.setstate(std::ios::failbit);
     for (int i = 0; i < numQueries; i++) {
         begin = distr(gen);
         end = begin + querySize - 1;
@@ -91,9 +93,7 @@ int main(int argc, char* argv[])
 
     cerr << "average query time: " << duration / numQueries << "[µs]" << endl;
 
-    delete cfg;
-    delete compressedCfg;
-    */
+    //delete cfg;
 
     return 1;
 }

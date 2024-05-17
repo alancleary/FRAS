@@ -19,10 +19,12 @@ class CompressedSumSet
 private:
 
     typedef std::function<uint64_t(uint8_t*)> GetKey;
+    typedef std::function<void(uint8_t*, uint64_t)> SetKey;
 
     static const int KNOWN_EMPTY_NODE = 0;
 
     GetKey getKey;
+    SetKey setKey;
 
     int leafCount;
     int memSize;
@@ -37,7 +39,7 @@ private:
     void construct(Set& set, int len);
     int construct(Set& set, int len, uint64_t nodeRef, uint8_t* key, int off, int& idx, int& sum);
 
-    //bool predecessor(uint64_t nodeRef, uint8_t* key, int off, int len);
+    uint64_t predecessor(uint64_t nodeRef, uint8_t* key, int off, int len);
     //bool successor(uint64_t nodeRef, uint8_t* key, int off, int len);
 
     //uint64_t lowestOneBit(uint64_t value);
@@ -47,7 +49,7 @@ public:
 
     void tmp(uint64_t nodeRef, uint8_t* key, int off, int len);
 
-    CompressedSumSet(Set& set, int len, GetKey getKey);
+    CompressedSumSet(Set& set, int len, GetKey getKey, SetKey setKey);
     ~CompressedSumSet();
 
     uint64_t size() { return count; };
@@ -59,7 +61,7 @@ public:
       * @param len The length of the uint8_t key.
       * @return A bool saying whether or not the key exists.
       */
-    bool get(uint8_t* key, int len);
+    //bool get(uint8_t* key, int len);
 
     /**
       * Gets the largest key that is less than or equal to the given uint8_t key. This is equivalent
@@ -70,6 +72,18 @@ public:
       * @return A bool saying whether or not a key was selected.
       */
     //bool predecessor(uint8_t* key, int len);
+
+    /**
+      * Selects the largest key that is less than or equal to the given uint8_t key and returns its
+      * rank. This is equivalent to a paired rank-select query on a bit vector, i.e.
+      * select(rank(key)).
+      *
+      * @param key The uint8_t key to match that will be updated if a different key is selected.
+      * @param len The length of the uint8_t key.
+      * @return The rank of the selected key.
+      * @throws Exception if a key is not selected.
+      */
+    uint64_t predecessor(uint8_t* key, int len);
 
     /**
       * Gets the smallest key that is greater than or equal to the given uint8_t key. This is equivalent

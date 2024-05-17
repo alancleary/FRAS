@@ -32,6 +32,7 @@ private:
 public:
 
     static uint64_t getKey(uint8_t* key);
+    static void setKey(uint8_t* key, uint64_t value);
 
     CompressedIndexedCFG();
     ~CompressedIndexedCFG();
@@ -80,7 +81,7 @@ public:
       * @param end The end position of the substring in the original string.
       * @throws Exception if begin or end is out of bounds.
       */
-    //void get(std::ostream& out, uint32_t begin, uint32_t end);
+    void get(std::ostream& out, uint32_t begin, uint32_t end);
 
 };
 

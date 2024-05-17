@@ -16,6 +16,11 @@ uint64_t CompressedIndexedCFG::getKey(uint8_t* key)
   return (uint64_t) get6Int(key);
 }
 
+void CompressedIndexedCFG::setKey(uint8_t* key, uint64_t value)
+{
+  set6Int(key, (uint32_t) value);
+}
+
 // construction
 
 CompressedIndexedCFG::CompressedIndexedCFG() { }
@@ -101,7 +106,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromMrRepairFile(std::string filenam
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
-    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey);
+    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
     delete[] key;
@@ -210,7 +215,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromNavarroFiles(std::string filenam
     }
     cfg->textLength = pos;
     cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
-    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey);
+    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
     delete[] key;
@@ -317,7 +322,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
     }
     cfg->textLength = pos;
     cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
-    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey);
+    cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
     delete[] key;
@@ -331,7 +336,6 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
 // random access
 
 // TODO: update to work on tail-compressed set
-/*
 void CompressedIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
 {
     if (begin < 0 || end >= textLength || begin > end) {
@@ -341,13 +345,16 @@ void CompressedIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
 
     uint8_t* key = new uint8_t[KEY_LENGTH];
     set6Int(key, begin);
-    int i = (int) map.predecessor(key, KEY_LENGTH);
+    int i = (int) cset->predecessor(key, KEY_LENGTH);
+    //std::cerr << "begin: " << begin << std::endl;
+    //std::cerr << "i: " << i << std::endl;
 
     //uint32_t predecessor = get6Int(key);
     //uint32_t ignore = begin - predecessor;
 
     // TODO: stacks should be preallocated to size of max depth
     int r = startRule;
+    //std::cerr << "rules[r][i]: " << rules[r][i] << std::endl;
     std::stack<int> ruleStack;
     std::stack<int> indexStack;
     for (uint32_t j = 0; j < length;) {
@@ -371,6 +378,5 @@ void CompressedIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
         }
     }
 }
-*/
 
 }

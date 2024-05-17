@@ -317,7 +317,7 @@ bool Set::predecessor(uint64_t nodeRef, uint8_t* key, int off, int len) {
     // get the largest key that is less than the given key
     uint64_t maskedBitMap = bitMap & (bitPos - 1);
     key[off] = largestKey(maskedBitMap);
-    bitPos = ((uint64_t) 1) << key[off];
+    bitPos = ((uint64_t) 1) << key[off++];  // mind the ++
 
     // nodeRef is a leaf node
     if (off++ == len - 1) {  // mind the ++

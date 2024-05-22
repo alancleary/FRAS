@@ -60,6 +60,9 @@ CompressedSumSet::CompressedSumSet(Set& set, int len, GetKey getKey, SetKey setK
     compressed = new bool[memSize + leafCount];
     // construct the tree
     construct(set, len);
+    std::cerr << "memSize: " << memSize << std::endl;
+    std::cerr << "leafCount: " << leafCount << std::endl;
+    std::cerr << "total: " << memSize + leafCount << std::endl;
 }
 
 void CompressedSumSet::computeCompressedSize(Set& set, int len)

@@ -69,6 +69,8 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromMrRepairFile(std::string filenam
 
     // read rules in order they were added to grammar, i.e. line-by-line
     for (i = CompressedIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
+        ruleSizes[i] = 0;
+        ruleDepths[i] = 0;
         for (j = 0; ;j++) {
             std::getline(reader, line);
             c = std::stoi(line);

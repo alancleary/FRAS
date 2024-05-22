@@ -3,6 +3,7 @@
 #include <random>
 //#include "cfg-amt/cfg.hpp"
 #include "cfg-amt/compressed-indexed-cfg.hpp"
+#include "cfg-amt/bitvector-indexed-cfg.hpp"
 //#include "cfg-amt/indexed-cfg.hpp"
 
 #include "cfg-amt/amt/key.hpp"
@@ -37,6 +38,19 @@ CompressedIndexedCFG* loadGrammar(string type, string filename) {
     return NULL;
 }
 
+BitvectorIndexedCFG* loadBitvectorGrammar(string type, string filename) {
+    if (type == "mrrepair") {
+        return BitvectorIndexedCFG::fromMrRepairFile(filename + ".out");
+    } else if (type == "navarro") {
+        return BitvectorIndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
+    } else if (type == "bigrepair") {
+        return BitvectorIndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+    }
+    cerr << "invalid grammar type: \"" << type << "\"" << endl;
+    cerr << endl;
+    return NULL;
+}
+
 int main(int argc, char* argv[])
 {
 
@@ -57,6 +71,15 @@ int main(int argc, char* argv[])
     cerr << "rules size: " << cfg->getRulesSize() << endl;
     cerr << "total size: " << cfg->getTotalSize() << endl;
     cerr << "depth: " << cfg->getDepth() << endl;
+
+    BitvectorIndexedCFG* cfg2 = loadBitvectorGrammar(type, filename);
+    cerr << "text length: " << cfg2->getTextLength() << endl;
+    cerr << "num rules: " << cfg2->getNumRules() << endl;
+    cerr << "start size: " << cfg2->getStartSize() << endl;
+    cerr << "rules size: " << cfg2->getRulesSize() << endl;
+    cerr << "total size: " << cfg2->getTotalSize() << endl;
+    cerr << "depth: " << cfg2->getDepth() << endl;
+    cerr << "mem size: " << cfg2->getMemSize() << endl;
     /*
     cerr << endl;
     cerr << "map entries: " << cfg->getNumMapEntries() << endl;
@@ -74,6 +97,7 @@ int main(int argc, char* argv[])
     // benchmarks
     chrono::steady_clock::time_point startTime, endTime;
     uint64_t duration = 0;
+    uint64_t bitvectorDuration = 0;
     int numQueries = 10000, querySize = 1000;
     random_device rd;
     mt19937 gen(rd());
@@ -82,6 +106,7 @@ int main(int argc, char* argv[])
 
     //cout.setstate(std::ios::failbit);
     for (int i = 0; i < numQueries; i++) {
+        // AMT query
         begin = distr(gen);
         end = begin + querySize - 1;
 
@@ -89,9 +114,19 @@ int main(int argc, char* argv[])
         cfg->get(cout, begin, end);
         endTime = chrono::steady_clock::now();
         duration += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+        begin = distr(gen);
+        end = begin + querySize - 1;
+
+        // bitvector query
+        startTime = chrono::steady_clock::now();
+        cfg2->get(cout, begin, end);
+        endTime = chrono::steady_clock::now();
+        duration += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
     }
 
-    cerr << "average query time: " << duration / numQueries << "[µs]" << endl;
+    cerr << "average AMT query time: " << duration / numQueries << "[µs]" << endl;
+
+    cerr << "average bitvector query time: " << duration / numQueries << "[µs]" << endl;
 
     //delete cfg;
 

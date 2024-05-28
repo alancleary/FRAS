@@ -45,9 +45,11 @@ private:
     //uint64_t lowestOneBit(uint64_t value);
     //uint64_t highestOneBit(uint64_t value);
 
+    void tmp(uint64_t nodeRef, uint8_t* key, int off, int len);
+
 public:
 
-    void tmp(uint64_t nodeRef, uint8_t* key, int off, int len);
+    void tmp(int len);
 
     CompressedSumSet(Set& set, int len, GetKey getKey, SetKey setKey);
     ~CompressedSumSet();

@@ -1,12 +1,12 @@
-#ifndef INCLUDED_CFG_AMT_INDEXED_CFG
-#define INCLUDED_CFG_AMT_INDEXED_CFG
+#ifndef INCLUDED_CFG_INDEXED_CFG
+#define INCLUDED_CFG_INDEXED_CFG
 
 #include <ostream>
 #include <string>
 #include <utility>  // std::pair, std::make_pair
-#include "cfg-amt/amt/map.hpp"
+#include "amt/map.hpp"
 
-namespace cfg_amt {
+namespace cfg {
 
 /** A naive CFG representation indexed with an AMT Map. */
 class IndexedCFG
@@ -14,7 +14,7 @@ class IndexedCFG
 
 private:
 
-    class TailCompressionVisitor : public MapTailVisitor
+    class TailCompressionVisitor : public amt::MapTailVisitor
     {
     public:
         unsigned int totalTails = 0;
@@ -35,7 +35,7 @@ private:
     int depth;
     int** rules;
     int startRule;
-    Map map;
+    amt::Map map;
 
 public:
 

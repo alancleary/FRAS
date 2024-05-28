@@ -1,10 +1,10 @@
 #include <algorithm>
 #include <bit>
-#include "cfg-amt/amt/bitops.hpp"
-#include "cfg-amt/amt/key.hpp"
-#include "cfg-amt/amt/map.hpp"
+#include "amt/bitops.hpp"
+#include "amt/key.hpp"
+#include "amt/map.hpp"
 
-namespace cfg_amt {
+namespace amt {
 
 // construction
 
@@ -249,7 +249,7 @@ uint64_t Map::predecessor(uint8_t* key, int len)
         uint64_t bitPos = ((uint64_t) 1) << key[off];
 
         // memoize the node if it has smaller keys
-        if (cfg_amt::lowestOneBit(bitMap) < bitPos) {
+        if (amt::lowestOneBit(bitMap) < bitPos) {
             nearestNodeRef = nodeRef;
             nearestOff = off;
         }
@@ -316,7 +316,7 @@ uint64_t Map::successor(uint8_t* key, int len)
         uint64_t bitPos = ((uint64_t) 1) << key[off];
 
         // memoize the node if it has larger keys
-        if (cfg_amt::highestOneBit(bitMap) > bitPos) {
+        if (amt::highestOneBit(bitMap) > bitPos) {
             nearestNodeRef = nodeRef;
             nearestOff = off;
         }

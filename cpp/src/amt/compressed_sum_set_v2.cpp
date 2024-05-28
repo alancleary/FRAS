@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <bit>
-#include "cfg-amt/amt/bitops.hpp"
-#include "cfg-amt/amt/key.hpp"
-#include "cfg-amt/amt/compressed_sum_set_v2.hpp"
+#include "amt/bitops.hpp"
+#include "amt/key.hpp"
+#include "amt/compressed_sum_set_v2.hpp"
 
 #include <iostream>
 
-namespace cfg_amt {
+namespace amt {
 
 void CompressedSumSetV2::tmp(int len)
 {
@@ -289,7 +289,7 @@ uint64_t CompressedSumSetV2::predecessor(uint8_t* key, int len) {
         uint64_t bitPos = ((uint64_t) 1) << key[off];
 
         // memoize the node if it has smaller keys
-        if (cfg_amt::lowestOneBit(bitMap) < bitPos) {
+        if (amt::lowestOneBit(bitMap) < bitPos) {
             nearestNodeRef = nodeRef;
             nearestOff = off;
         }
@@ -322,7 +322,7 @@ uint64_t CompressedSumSetV2::predecessor(uint8_t* key, int len) {
                 return sum + std::popcount(maskedLeaf);
             }
             // check if there's a smaller key in the leaf
-            if (cfg_amt::lowestOneBit(value) < bitPosLeaf) {
+            if (amt::lowestOneBit(value) < bitPosLeaf) {
                 // NOTE: the return value is a bitMap instead of a partial sum
                 uint64_t maskedLeaf = predecessor(idx, key, off, len);
                 //int numChildren = std::popcount(bitMap);
@@ -413,7 +413,7 @@ bool CompressedSumSetV2::successor(uint8_t* key, int len) {
         uint64_t bitPos = ((uint64_t) 1) << key[off];
 
         // memoize the node if it has larger keys
-        if (cfg_amt::highestOneBit(bitMap) > bitPos) {
+        if (amt::highestOneBit(bitMap) > bitPos) {
             nearestNodeRef = nodeRef;
             nearestOff = off;
         }
@@ -434,7 +434,7 @@ bool CompressedSumSetV2::successor(uint8_t* key, int len) {
                 return true;
             }
             // check if there's a larger key in the leaf
-            if (cfg_amt::highestOneBit(value) > bitPosLeaf) {
+            if (amt::highestOneBit(value) > bitPosLeaf) {
                 return successor(idx, key, off, len);
             }
             // go back to the last node with a bit after the matched bit

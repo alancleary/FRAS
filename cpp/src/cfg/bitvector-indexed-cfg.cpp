@@ -3,13 +3,13 @@
 #include <fstream>
 #include <stack>
 #include <sys/stat.h>
-//#include "cfg-amt/amt/key.hpp"
-//#include "cfg-amt/amt/set.hpp"
-#include "cfg-amt/bitvector-indexed-cfg.hpp"
+//#include "amt/key.hpp"
+//#include "amt/set.hpp"
+#include "cfg/bitvector-indexed-cfg.hpp"
 
 #include <iostream>
 
-namespace cfg_amt {
+namespace cfg {
 
 //uint64_t BitvectorIndexedCFG::getKey(uint8_t* key)
 //{

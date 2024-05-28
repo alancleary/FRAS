@@ -1,16 +1,16 @@
 #include <iostream>
 #include <chrono>
 #include <random>
-//#include "cfg-amt/cfg.hpp"
-#include "cfg-amt/compressed-indexed-cfg.hpp"
-#include "cfg-amt/compressed-indexed-cfg_v2.hpp"
-#include "cfg-amt/bitvector-indexed-cfg.hpp"
-//#include "cfg-amt/indexed-cfg.hpp"
+//#include "cfg/cfg.hpp"
+#include "cfg/compressed-indexed-cfg.hpp"
+#include "cfg/compressed-indexed-cfg_v2.hpp"
+#include "cfg/bitvector-indexed-cfg.hpp"
+//#include "cfg/indexed-cfg.hpp"
 
-#include "cfg-amt/amt/key.hpp"
+//#include "amt/key.hpp"
 
 using namespace std;
-using namespace cfg_amt;
+using namespace cfg;
 
 void usage(int argc, char* argv[]) {
     cerr << "usage: " << argv[0] << " <type> <filename>" << endl;

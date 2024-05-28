@@ -1,7 +1,7 @@
 #include <bit>
-#include "cfg-amt/amt/key.hpp"
+#include "amt/key.hpp"
 
-namespace cfg_amt {
+namespace amt {
 
 int set6Int(uint8_t* key, uint32_t value, int pos /*= 0*/) {
     key[pos] = (uint8_t) ((value >> 30) & 0x3F);

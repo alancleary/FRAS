@@ -1,5 +1,5 @@
-#ifndef INCLUDED_CFG_AMT_BITVECTOR_INDEXED_CFG
-#define INCLUDED_CFG_AMT_BITVECTOR_INDEXED_CFG
+#ifndef INCLUDED_CFG_BITVECTOR_INDEXED_CFG
+#define INCLUDED_CFG_BITVECTOR_INDEXED_CFG
 
 #include <cmath>
 #include <ostream>
@@ -9,7 +9,7 @@
 #include <sdsl/rank_support_v.hpp>
 #include <sdsl/select_support_mcl.hpp>
 
-namespace cfg_amt {
+namespace cfg {
 
 /** A naive CFG representation indexed with an AMT Map. */
 class BitvectorIndexedCFG

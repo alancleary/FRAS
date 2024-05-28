@@ -1,14 +1,14 @@
-#ifndef INCLUDED_CFG_AMT_COMPRESSED_INDEXED_CFG_V2
-#define INCLUDED_CFG_AMT_COMPRESSED_INDEXED_CFG_V2
+#ifndef INCLUDED_CFG_COMPRESSED_INDEXED_CFG_V2
+#define INCLUDED_CFG_COMPRESSED_INDEXED_CFG_V2
 
 #include <ostream>
 #include <string>
 #include <utility>  // std::pair, std::make_pair
 //#include "cfg-amt/amt/compressed_sum_set.hpp"
-#include "cfg-amt/amt/compressed_sum_set_v2.hpp"
+#include "amt/compressed_sum_set_v2.hpp"
 //#include "cfg-amt/indexed-cfg.hpp"
 
-namespace cfg_amt {
+namespace cfg {
 
 /** A naive CFG representation indexed with an AMT Map. */
 class CompressedIndexedCFGV2
@@ -28,7 +28,7 @@ private:
     int depth;
     int** rules;
     int startRule;
-    CompressedSumSetV2 *cset;
+    amt::CompressedSumSetV2 *cset;
 
 public:
 

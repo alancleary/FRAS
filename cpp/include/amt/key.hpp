@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_AMT_KEY
-#define INCLUDED_CFG_AMT_KEY
+#ifndef INCLUDED_AMT_KEY
+#define INCLUDED_AMT_KEY
 
 #include <cstdint>
 
-namespace cfg_amt {
+namespace amt {
 
 /**
  * Converts a 32 bit int to a 6 byte key.

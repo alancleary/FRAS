@@ -1,6 +1,6 @@
-#include "cfg-amt/amt/bitops.hpp"
+#include "amt/bitops.hpp"
 
-namespace cfg_amt {
+namespace amt {
 
 uint64_t lowestOneBit(uint64_t value) {
     return value & - value;

@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <fstream>
-#include "cfg-amt/amt/key.hpp"
-#include "cfg-amt/cfg.hpp"
+#include "amt/key.hpp"
+#include "cfg/cfg.hpp"
 
 #include <iostream>
 
-namespace cfg_amt {
+namespace cfg {
 
 // construction
 
@@ -110,7 +110,7 @@ void CFG::fromMrRepairRules(CFG* cfg, int** rules, int ruleIdx, int* ruleSizes, 
     int len;
     for (int i = 0; rule[i] != CFG::MR_REPAIR_DUMMY_CODE; i++) {
         c = rule[i];
-        len = set6Int(key, seqPos);
+        len = amt::set6Int(key, seqPos);
         // this is the first occurrence of the (non-)terminal character
         if (references[c] == -1) {
             // the character is a terminal
@@ -143,12 +143,12 @@ char CFG::get(uint32_t i)
 
     uint8_t* key = new uint8_t[CFG::KEY_LENGTH];
 
-    int len = set6Int(key, i);
+    int len = amt::set6Int(key, i);
     uint64_t selected = map.predecessor(key, len);
 
     while (selected >= CFG::CHAR_SIZE) {
-        i = (selected - CFG::CHAR_SIZE) + (i - get6Int(key));
-        len = set6Int(key, i);
+        i = (selected - CFG::CHAR_SIZE) + (i - amt::get6Int(key));
+        len = amt::set6Int(key, i);
         selected = map.predecessor(key, len);
     }
 
@@ -162,9 +162,9 @@ void CFG::get(std::ostream& out, uint32_t begin, uint32_t end)
     }
 
     uint8_t* key = new uint8_t[KEY_LENGTH * getDepth()];
-    set6Int(key, begin);
+    amt::set6Int(key, begin);
     uint64_t value = map.predecessor(key, KEY_LENGTH);
-    uint32_t predecessor = get6Int(key);
+    uint32_t predecessor = amt::get6Int(key);
     //uint32_t ignore = begin - predecessor;
 
     //OutputStreamFilter filteredOut = new OutputStreamFilter(out, ignore);
@@ -208,7 +208,7 @@ void CFG::GetVisitorBasic::processPrevious(uint8_t* key, uint32_t currentKey)
 
 void CFG::GetVisitorBasic::visit(uint8_t* key, int len, uint64_t value)
 {
-    uint32_t currentKey = get6Int(key, keyPos);
+    uint32_t currentKey = amt::get6Int(key, keyPos);
     processPrevious(key, currentKey);
     previousKey = currentKey;
     previousValue = value;
@@ -324,7 +324,7 @@ void CFG::GetVisitorCached::processPrevious(uint8_t* key, uint32_t currentKey)
 
 void CFG::GetVisitorCached::visit(uint8_t* key, int len, uint64_t value)
 {
-    uint32_t currentKey = get6Int(key, keyPos);
+    uint32_t currentKey = amt::get6Int(key, keyPos);
     processPrevious(key, currentKey);
     previousKey = currentKey;
     previousValue = value;

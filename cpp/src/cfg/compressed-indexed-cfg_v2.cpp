@@ -3,22 +3,22 @@
 #include <fstream>
 #include <stack>
 #include <sys/stat.h>
-#include "cfg-amt/amt/key.hpp"
-#include "cfg-amt/amt/set.hpp"
-#include "cfg-amt/compressed-indexed-cfg_v2.hpp"
+#include "amt/key.hpp"
+#include "amt/set.hpp"
+#include "cfg/compressed-indexed-cfg_v2.hpp"
 
 #include <iostream>
 
-namespace cfg_amt {
+namespace cfg {
 
 uint64_t CompressedIndexedCFGV2::getKey(uint8_t* key)
 {
-  return (uint64_t) get6Int(key);
+    return (uint64_t) amt::get6Int(key);
 }
 
 void CompressedIndexedCFGV2::setKey(uint8_t* key, uint64_t value)
 {
-  set6Int(key, (uint32_t) value);
+    amt::set6Int(key, (uint32_t) value);
 }
 
 // construction
@@ -91,7 +91,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromMrRepairFile(std::string fil
     }
 
     // read start rule
-    Set* set = new Set(cfg->startSize);
+    amt::Set* set = new amt::Set(cfg->startSize);
     uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFGV2::KEY_LENGTH];
     int len;
@@ -101,14 +101,14 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromMrRepairFile(std::string fil
         c = std::stoi(line);
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         //cfg->map.set(key, len, i);
         set->set(key, len);
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->rules[cfg->startRule][cfg->startSize] = CompressedIndexedCFGV2::DUMMY_CODE;
-    cfg->cset = new CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
+    cfg->cset = new amt::CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
 
     // clean up
     delete[] key;
@@ -195,7 +195,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromNavarroFiles(std::string fil
     FILE* cFile = fopen(filenameC.c_str(), "r");
 
     // read the start rule
-    Set* set = new Set(cfg->startSize);
+    amt::Set* set = new amt::Set(cfg->startSize);
     uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFGV2::KEY_LENGTH];
     int t;
@@ -208,7 +208,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromNavarroFiles(std::string fil
         }
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         //cfg->map.set(key, len, i);
         set->set(key, len);
         pos += ruleSizes[c];
@@ -216,7 +216,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromNavarroFiles(std::string fil
     }
     cfg->textLength = pos;
     cfg->rules[cfg->startRule][i] = CompressedIndexedCFGV2::DUMMY_CODE;
-    cfg->cset = new CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
+    cfg->cset = new amt::CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
 
     // clean up
     delete[] key;
@@ -302,7 +302,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromBigRepairFiles(std::string f
     FILE* cFile = fopen(filenameC.c_str(), "r");
 
     // read the start rule
-    Set* set = new Set(cfg->startSize);
+    amt::Set* set = new amt::Set(cfg->startSize);
     uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFGV2::KEY_LENGTH];
     int t;
@@ -315,7 +315,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromBigRepairFiles(std::string f
         }
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         //cfg->map.set(key, len, i);
         set->set(key, len);
         pos += ruleSizes[c];
@@ -323,7 +323,7 @@ CompressedIndexedCFGV2* CompressedIndexedCFGV2::fromBigRepairFiles(std::string f
     }
     cfg->textLength = pos;
     cfg->rules[cfg->startRule][cfg->startSize] = CompressedIndexedCFGV2::DUMMY_CODE;
-    cfg->cset = new CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
+    cfg->cset = new amt::CompressedSumSetV2(*set, 6, CompressedIndexedCFGV2::getKey, CompressedIndexedCFGV2::setKey);
 
     // clean up
     delete[] key;
@@ -344,13 +344,13 @@ void CompressedIndexedCFGV2::get(std::ostream& out, uint32_t begin, uint32_t end
     uint32_t length = end - begin;
 
     uint8_t* key = new uint8_t[KEY_LENGTH];
-    set6Int(key, begin);
+    amt::set6Int(key, begin);
     int i = (int) cset->predecessor(key, KEY_LENGTH);
     //std::cerr << "v2 cset: begin: " << begin << ", i: " << i << std::endl;
     //std::cerr << "begin: " << begin << std::endl;
     //std::cerr << "i: " << i << std::endl;
 
-    //uint32_t predecessor = get6Int(key);
+    //uint32_t predecessor = amt::get6Int(key);
     //uint32_t ignore = begin - predecessor;
 
     // TODO: stacks should be preallocated to size of max depth

@@ -1,11 +1,11 @@
-#ifndef INCLUDED_CFG_AMT_COMPRESSED_SUM_SET
-#define INCLUDED_CFG_AMT_COMPRESSED_SUM_SET
+#ifndef INCLUDED_AMT_COMPRESSED_SUM_SET
+#define INCLUDED_AMT_COMPRESSED_SUM_SET
 
 #include <cstdint>
 #include <functional>  // function
-#include "cfg-amt/amt/set.hpp"
+#include "amt/set.hpp"
 
-namespace cfg_amt {
+namespace amt {
 
 /**
  * A set implemented as an array mapped trie (AMT) with tail compression and a partial sum of the number of

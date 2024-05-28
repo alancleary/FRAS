@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_AMT_AMT_BITOPS
-#define INCLUDED_CFG_AMT_AMT_BITOPS
+#ifndef INCLUDED_AMT_BITOPS
+#define INCLUDED_AMT_BITOPS
 
 #include <cstdint>
 
-namespace cfg_amt {
+namespace amt {
 
 /**
  * Returns a 64 bit uint with only the lowest bit set.

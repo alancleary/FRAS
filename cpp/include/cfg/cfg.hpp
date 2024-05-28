@@ -1,15 +1,15 @@
-#ifndef INCLUDED_CFG_AMT_CFG
-#define INCLUDED_CFG_AMT_CFG
+#ifndef INCLUDED_CFG_CFG
+#define INCLUDED_CFG_CFG
 
 #include <ostream>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "cfg-amt/amt/map.hpp"
+#include "amt/map.hpp"
 
 #include <unordered_set>
 
-namespace cfg_amt {
+namespace cfg {
 
 /** A representation of a context-free grammar built on the MAT Map. */
 class CFG
@@ -17,7 +17,7 @@ class CFG
 
 private:
 
-    class GetVisitor : public MapVisitor
+    class GetVisitor : public amt::MapVisitor
     {
     protected:
         CFG& parent;
@@ -83,7 +83,7 @@ private:
     int startSize;
     int rulesSize;
     int depth;
-    Map map;
+    amt::Map map;
 
     //static int printMrRepairRules(int** rules, int rule, int pos);
     static void fromMrRepairRules(CFG* cfg, int** rules, int rulesSize);

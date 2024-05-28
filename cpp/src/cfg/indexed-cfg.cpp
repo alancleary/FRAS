@@ -3,10 +3,10 @@
 #include <fstream>
 #include <stack>
 #include <sys/stat.h>
-#include "cfg-amt/amt/key.hpp"
-#include "cfg-amt/indexed-cfg.hpp"
+#include "amt/key.hpp"
+#include "cfg/indexed-cfg.hpp"
 
-namespace cfg_amt {
+namespace cfg {
 
 // construction
 
@@ -84,7 +84,7 @@ IndexedCFG* IndexedCFG::fromMrRepairFile(std::string filename)
         c = std::stoi(line);
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         cfg->map.set(key, len, i);
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
@@ -188,7 +188,7 @@ IndexedCFG* IndexedCFG::fromNavarroFiles(std::string filenameC, std::string file
         }
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         cfg->map.set(key, len, i);
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
@@ -291,7 +291,7 @@ IndexedCFG* IndexedCFG::fromBigRepairFiles(std::string filenameC, std::string fi
         }
         cfg->rules[cfg->startRule][i] = c;
         // encode a pointer to its index in the AMT Map
-        len = set6Int(key, pos);
+        len = amt::set6Int(key, pos);
         cfg->map.set(key, len, i);
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
@@ -335,10 +335,10 @@ void IndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
     uint32_t length = end - begin;
 
     uint8_t* key = new uint8_t[KEY_LENGTH];
-    set6Int(key, begin);
+    amt::set6Int(key, begin);
     int i = (int) map.predecessor(key, KEY_LENGTH);
 
-    //uint32_t predecessor = get6Int(key);
+    //uint32_t predecessor = amt::get6Int(key);
     //uint32_t ignore = begin - predecessor;
 
     // TODO: stacks should be preallocated to size of max depth

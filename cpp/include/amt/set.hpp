@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_AMT_AMT_SET
-#define INCLUDED_CFG_AMT_AMT_SET
+#ifndef INCLUDED_AMT_SET
+#define INCLUDED_AMT_SET
 
 #include <cstdint>
 
-namespace cfg_amt {
+namespace amt {
 
 /** A set implemented as an array mapped trie. */
 class Set

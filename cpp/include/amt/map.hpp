@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_AMT_AMT_MAP
-#define INCLUDED_CFG_AMT_AMT_MAP
+#ifndef INCLUDED_AMT_MAP
+#define INCLUDED_AMT_MAP
 
 #include <cstdint>
 
-namespace cfg_amt {
+namespace amt {
 
 class MapVisitor
 {

@@ -65,10 +65,10 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromMrRepairFile(std::string filenam
         ruleDepths[i] = 1;
     }
     cfg->rules[cfg->startRule] = new int[cfg->startSize + 1];  // +1 for the dummy code
-    int i, j, c, ruleLength;
+    int j, c, ruleLength;
 
     // read rules in order they were added to grammar, i.e. line-by-line
-    for (i = CompressedIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
+    for (int i = CompressedIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
         for (j = 0; ;j++) {
@@ -92,10 +92,10 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromMrRepairFile(std::string filenam
 
     // read start rule
     Set* set = new Set(cfg->startSize);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFG::KEY_LENGTH];
     int len;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         // get the (non-)terminal character
         std::getline(reader, line);
         c = std::stoi(line);
@@ -107,7 +107,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromMrRepairFile(std::string filenam
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
-    cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = CompressedIndexedCFG::DUMMY_CODE;
     cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
@@ -159,7 +159,6 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromNavarroFiles(std::string filenam
     // read the rule pairs
     Tpair p;
     int i, c;
-    char tmp;
     for (int i = CompressedIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
@@ -197,7 +196,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromNavarroFiles(std::string filenam
 
     // read the start rule
     Set* set = new Set(cfg->startSize);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFG::KEY_LENGTH];
     int t;
     for (i = 0; i < cfg->startSize; i++) {
@@ -216,7 +215,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromNavarroFiles(std::string filenam
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->textLength = pos;
-    cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = CompressedIndexedCFG::DUMMY_CODE;
     cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
@@ -235,6 +234,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
     typedef struct { unsigned int left, right; } Tpair;
 
     CompressedIndexedCFG* cfg = new CompressedIndexedCFG();
+    cfg->depth = 0;
 
     // get the .R file size
     struct stat s;
@@ -251,6 +251,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
     cfg->numRules = (len - sizeof(int)) / sizeof(Tpair);
     cfg->rulesSize = cfg->numRules * 2;  // each rule is a pair
     cfg->startRule = cfg->numRules + CompressedIndexedCFG::ALPHABET_SIZE;
+    std::cerr << "num rules: " << cfg->numRules << ", start rule: " << cfg->startRule << std::endl;
 
     // prepare to read grammar
     int rulesSize = cfg->startRule + 1;  // +1 for start rule
@@ -258,20 +259,22 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
     int* ruleSizes = new int[rulesSize - 1];
     int* ruleDepths = new int[rulesSize - 1];
     for (int i = 0; i < CompressedIndexedCFG::ALPHABET_SIZE; i++) {
-        ruleSizes[i] = 1;
+        ruleSizes[i] = 0;
         ruleDepths[i] = 1;
     }
 
     // read the rule pairs
     Tpair p;
-    int i, c;
-    char tmp;
+    int c;
     for (int i = CompressedIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
         fread(&p, sizeof(Tpair), 1, rFile);
         cfg->rules[i] = new int[3];  // +1 for the dummy code
         if (p.left < alphabetSize) {
+            if (ruleSizes[p.left] == 0) {
+                ruleSizes[p.left] = 1;
+            }
             c = (unsigned char) p.left;
         } else {
             c = p.left;  // already offset by alphabetSize
@@ -280,6 +283,9 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
         ruleSizes[i] += ruleSizes[c];
         ruleDepths[i] = std::max(ruleDepths[c] + 1, ruleDepths[i]);
         if (p.right < alphabetSize) {
+            if (ruleSizes[p.right] == 0) {
+                ruleSizes[p.right] = 1;
+            }
             c = (unsigned char) p.right;
         } else {
             c = p.right;  // already offset by alphabetSize
@@ -304,10 +310,10 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
 
     // read the start rule
     Set* set = new Set(cfg->startSize);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     uint8_t* key = new uint8_t[CompressedIndexedCFG::KEY_LENGTH];
     int t;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         fread(&t, sizeof(unsigned int), 1, cFile);
         if (t < alphabetSize) {
             c = (unsigned char) t;
@@ -323,7 +329,7 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->textLength = pos;
-    cfg->rules[cfg->startRule][i] = CompressedIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = CompressedIndexedCFG::DUMMY_CODE;
     cfg->cset = new CompressedSumSet(*set, 6, CompressedIndexedCFG::getKey, CompressedIndexedCFG::setKey);
 
     // clean up
@@ -337,7 +343,6 @@ CompressedIndexedCFG* CompressedIndexedCFG::fromBigRepairFiles(std::string filen
 
 // random access
 
-// TODO: update to work on tail-compressed set
 void CompressedIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
 {
     if (begin < 0 || end >= textLength || begin > end) {
@@ -348,6 +353,7 @@ void CompressedIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
     uint8_t* key = new uint8_t[KEY_LENGTH];
     set6Int(key, begin);
     int i = (int) cset->predecessor(key, KEY_LENGTH);
+    //std::cerr << "cset: begin: " << begin << ", i: " << i << std::endl;
     //std::cerr << "begin: " << begin << std::endl;
     //std::cerr << "i: " << i << std::endl;
 

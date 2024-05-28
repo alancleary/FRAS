@@ -22,7 +22,7 @@ private:
 
     static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
 
-    unsigned int textLength;
+    uint64_t textLength;
     int numRules;
     int startSize;
     int rulesSize;
@@ -72,15 +72,54 @@ public:
      */
     static BitvectorIndexedCFG* fromBigRepairFiles(std::string filenameC, std::string filenameR);
 
-    unsigned int getTextLength() const { return textLength; }
+    uint64_t getTextLength() const { return textLength; }
     int getNumRules() const { return numRules; }
     int getStartSize() const { return startSize; }
     int getRulesSize() const { return rulesSize; }
     int getTotalSize() const { return startSize + rulesSize; }
     int getDepth() const { return depth; }
+
     unsigned int getBitvectorSize() const { return 64 * std::ceil(textLength / 64 + 1); }
     unsigned int getRankSize() const { return 0.25 * textLength; }
+    unsigned int getRankSizeV5() const { return 0.0625 * textLength; }
     unsigned int getMemSize() const { return getBitvectorSize() + getRankSize(); }
+    unsigned int getMemSizeV5() const { return getBitvectorSize() + getRankSizeV5(); }
+
+    unsigned int getBitvectorSizeIl() const {
+        unsigned int K = 512;
+        return textLength * (1 + 64 / K);
+    }
+    unsigned int getRankSizeIl() const { return 128; }
+    unsigned int getMemSizeIl() const { return getBitvectorSizeIl() + getRankSizeIl(); }
+
+    //unsigned int choose(unsigned int n, unsigned int k) {
+    //    if (k == 0) return 1;
+    //    if (k > n / 2) return choose(n, n - k);
+    //    return n * choose(n - 1, k - 1) / k;
+    //}
+
+    constexpr inline size_t binom(size_t n, size_t k) noexcept {
+        return
+          (        k> n  )? 0 :          // out of range
+          (k==0 || k==n  )? 1 :          // edge
+          (k==1 || k==n-1)? n :          // first
+          (     k+k < n  )?              // recursive:
+          (binom(n-1,k-1) * n)/k :       //  path to k=1   is faster
+          (binom(n-1,k) * n)/(n-k);      //  path to k=n-1 is faster
+    }
+
+    unsigned int getBitvectorSizeRRR() {
+        return std::ceil(std::log(binom(textLength, startSize)));
+    }
+    unsigned int getRankSizeRRR() { return 80; }
+    unsigned int getMemSizeRRR() { return getBitvectorSizeRRR() + getRankSizeRRR(); }
+
+
+    unsigned int getBitvectorSizeSparse() const {
+        return startSize * (2 + std::log(textLength / startSize));
+    }
+    unsigned int getRankSizeSparse() const { return 64; }
+    unsigned int getMemSizeSparse() const { return getBitvectorSizeSparse() + getRankSizeSparse(); }
 
     /**
       * Gets a substring in the original string.

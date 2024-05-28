@@ -20,7 +20,7 @@ private:
 
     static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
 
-    unsigned int textLength;
+    uint64_t textLength;
     int numRules;
     int startSize;
     int rulesSize;
@@ -30,6 +30,8 @@ private:
     CompressedSumSet *cset;
 
 public:
+
+    void tmp() { cset->tmp(KEY_LENGTH); }
 
     static uint64_t getKey(uint8_t* key);
     static void setKey(uint8_t* key, uint64_t value);
@@ -66,7 +68,7 @@ public:
      */
     static CompressedIndexedCFG* fromBigRepairFiles(std::string filenameC, std::string filenameR);
 
-    unsigned int getTextLength() const { return textLength; }
+    uint64_t getTextLength() const { return textLength; }
     int getNumRules() const { return numRules; }
     int getStartSize() const { return startSize; }
     int getRulesSize() const { return rulesSize; }

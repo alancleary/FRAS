@@ -65,10 +65,10 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromMrRepairFile(std::string filename)
         ruleDepths[i] = 1;
     }
     cfg->rules[cfg->startRule] = new int[cfg->startSize + 1];  // +1 for the dummy code
-    int i, j, c, ruleLength;
+    int j, c, ruleLength;
 
     // read rules in order they were added to grammar, i.e. line-by-line
-    for (i = BitvectorIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
+    for (int i = BitvectorIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
         for (j = 0; ;j++) {
@@ -93,10 +93,10 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromMrRepairFile(std::string filename)
     // read start rule
     //Set* set = new Set(cfg->startSize);
     cfg->bitvector = sdsl::bit_vector(cfg->textLength, 0);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     //uint8_t* key = new uint8_t[BitvectorIndexedCFG::KEY_LENGTH];
     //int len;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         // get the (non-)terminal character
         std::getline(reader, line);
         c = std::stoi(line);
@@ -109,7 +109,7 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromMrRepairFile(std::string filename)
         pos += ruleSizes[c];
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
-    cfg->rules[cfg->startRule][i] = BitvectorIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = BitvectorIndexedCFG::DUMMY_CODE;
     //cfg->cset = new BitvectorSumSet(*set, 6, BitvectorIndexedCFG::getKey, BitvectorIndexedCFG::setKey);
     cfg->rank = sdsl::rank_support_v5<>(&(cfg->bitvector));
     //cfg->select = sdsl::select_support_mcl(&(cfg->bitvector));
@@ -130,6 +130,7 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromNavarroFiles(std::string filenameC
     typedef struct { int left, right; } Tpair;
 
     BitvectorIndexedCFG* cfg = new BitvectorIndexedCFG();
+    cfg->depth = 0;
 
     // get the .R file size
     struct stat s;
@@ -162,8 +163,7 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromNavarroFiles(std::string filenameC
 
     // read the rule pairs
     Tpair p;
-    int i, c;
-    char tmp;
+    int c;
     for (int i = BitvectorIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
@@ -201,10 +201,10 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromNavarroFiles(std::string filenameC
 
     // read the start rule
     //Set* set = new Set(cfg->startSize);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     //uint8_t* key = new uint8_t[BitvectorIndexedCFG::KEY_LENGTH];
     int t;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         fread(&t, sizeof(int), 1, cFile);
         if (t < alphabetSize) {
             c = (unsigned char) map[t];
@@ -220,13 +220,13 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromNavarroFiles(std::string filenameC
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->textLength = pos;
-    cfg->rules[cfg->startRule][i] = BitvectorIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = BitvectorIndexedCFG::DUMMY_CODE;
     //cfg->cset = new BitvectorSumSet(*set, 6, BitvectorIndexedCFG::getKey, BitvectorIndexedCFG::setKey);
 
     // index the start rule
     cfg->bitvector = sdsl::bit_vector(cfg->textLength, 0);
     pos = 0;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         cfg->bitvector[pos] = 1;
         c = cfg->rules[cfg->startRule][i];
         pos += ruleSizes[c];
@@ -250,6 +250,7 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromBigRepairFiles(std::string filenam
     typedef struct { unsigned int left, right; } Tpair;
 
     BitvectorIndexedCFG* cfg = new BitvectorIndexedCFG();
+    cfg->depth = 0;
 
     // get the .R file size
     struct stat s;
@@ -279,8 +280,7 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromBigRepairFiles(std::string filenam
 
     // read the rule pairs
     Tpair p;
-    int i, c;
-    char tmp;
+    int c;
     for (int i = BitvectorIndexedCFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;
@@ -319,10 +319,10 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromBigRepairFiles(std::string filenam
 
     // read the start rule
     //Set* set = new Set(cfg->startSize);
-    unsigned int pos = 0;
+    uint64_t pos = 0;
     //uint8_t* key = new uint8_t[BitvectorIndexedCFG::KEY_LENGTH];
     int t;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         fread(&t, sizeof(unsigned int), 1, cFile);
         if (t < alphabetSize) {
             c = (unsigned char) t;
@@ -338,13 +338,13 @@ BitvectorIndexedCFG* BitvectorIndexedCFG::fromBigRepairFiles(std::string filenam
         cfg->depth = std::max(ruleDepths[c] + 1, cfg->depth);
     }
     cfg->textLength = pos;
-    cfg->rules[cfg->startRule][i] = BitvectorIndexedCFG::DUMMY_CODE;
+    cfg->rules[cfg->startRule][cfg->startSize] = BitvectorIndexedCFG::DUMMY_CODE;
     //cfg->cset = new BitvectorSumSet(*set, 6, BitvectorIndexedCFG::getKey, BitvectorIndexedCFG::setKey);
 
     // index the start rule
     cfg->bitvector = sdsl::bit_vector(cfg->textLength, 0);
     pos = 0;
-    for (i = 0; i < cfg->startSize; i++) {
+    for (int i = 0; i < cfg->startSize; i++) {
         cfg->bitvector[pos] = 1;
         c = cfg->rules[cfg->startRule][i];
         pos += ruleSizes[c];
@@ -373,7 +373,7 @@ void BitvectorIndexedCFG::get(std::ostream& out, uint32_t begin, uint32_t end)
     uint8_t* key = new uint8_t[KEY_LENGTH];
     //set6Int(key, begin);
     //int i = (int) cset->predecessor(key, KEY_LENGTH);
-    int i = rank.rank(begin + 1);
+    int i = rank.rank(begin);
     //std::cerr << "begin: " << begin << std::endl;
     //std::cerr << "i: " << i << std::endl;
 

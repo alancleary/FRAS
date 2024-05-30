@@ -1,99 +1,41 @@
 #ifndef INCLUDED_CFG_CFG
 #define INCLUDED_CFG_CFG
 
-#include <ostream>
 #include <string>
-#include <unordered_map>
-#include <utility>
-#include "amt/map.hpp"
-
-#include <unordered_set>
+//#include "cfg/random_access.hpp"
 
 namespace cfg {
 
-/** A representation of a context-free grammar built on the MAT Map. */
+/** Forward declare RandomAccess. */
+//class RandomAccess;
+
+/** Parses different grammar-compressed CFGs into a naive encoding. */
 class CFG
 {
 
-private:
+//private:
 
-    class GetVisitor : public amt::MapVisitor
-    {
-    protected:
-        CFG& parent;
-        std::ostream& out;
-    public:
-        int keyPos = 0;
-        uint32_t previousKey = UINT32_MAX;
-        uint64_t previousValue;
-
-        GetVisitor(CFG& cfg, std::ostream& o);
-
-        virtual void processPrevious(uint8_t* key, uint32_t currentKey) = 0;
-        virtual void visit(uint8_t* key, int len, uint64_t value) = 0;
-    };
-
-    class GetVisitorBasic : public GetVisitor
-    {
-    public:
-        using GetVisitor::GetVisitor;
-
-        void processPrevious(uint8_t* key, uint32_t currentKey);
-        void visit(uint8_t* key, int len, uint64_t value);
-    };
-
-    class GetVisitorCached : public GetVisitor
-    {
-    private:
-        uint32_t currentlyCaching;
-        char* currentCache = NULL;
-        uint32_t currentCachePosition;
-
-        char* cachedRule = NULL;
-        uint32_t cachedRuleLength;
-        uint32_t cachedOffset;
-
-        // maps rules to the strings they generate
-        std::unordered_map<uint32_t, std::pair<char*, uint32_t>> strings;
-        // maps nested rules into the string of a rule they're nested in
-        // value always has length 3: [0] = rule, [1] = start
-        std::unordered_map<uint32_t, std::pair<uint32_t, uint32_t>> pointers;
-
-        void checkCache(uint32_t rule);
-        char* cacheString(uint32_t rule, uint32_t length);
-        void cachePointer(uint32_t rule, uint32_t reference, uint32_t start);
-        void cacheRule(uint32_t rule, uint32_t length);
-
-        void writeChar(char c);
-    public:
-        using GetVisitor::GetVisitor;
-
-        void processPrevious(uint8_t* key, uint32_t currentKey);
-        void visit(uint8_t* key, int len, uint64_t value);
-    };
-
-    static const int KEY_LENGTH = 6;
-    static const int CHAR_SIZE = 256;
-
-    static const int MR_REPAIR_CHAR_SIZE = 256;
-    static const int MR_REPAIR_DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
-
-    int textLength;
-    int numRules;
-    int startSize;
-    int rulesSize;
-    int depth;
-    amt::Map map;
-
-    //static int printMrRepairRules(int** rules, int rule, int pos);
-    static void fromMrRepairRules(CFG* cfg, int** rules, int rulesSize);
-    static void fromMrRepairRules(CFG* cfg, int** rules, int ruleIdx, int* ruleSizes, int* ruleDepths , int* references, uint8_t* key, int seqPos);
-
-    void get(GetVisitor& visitor, uint8_t* key, uint32_t begin, uint32_t end);
-
+// TODO: fix friend relationship and make these members private
 public:
+    static const int ALPHABET_SIZE = 256;
+
+    static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
+
+    uint64_t textLength = 0;
+    int numRules = 0;
+    int rulesSize = 0;
+    int** rules;
+    int startRule;
+    int startSize = 0;
+    int depth = 0;
+
+    void computeDepthAndTextSize();
+    void computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule);
+
+//public:
 
     CFG();
+    ~CFG();
 
     /**
      * Loads an MR-Repair grammar from a file.
@@ -104,33 +46,34 @@ public:
      */
     static CFG* fromMrRepairFile(std::string filename);
 
-    int getTextLength() { return textLength; }
-    int getNumRules() { return numRules; }
-    int getStartSize() { return startSize; }
-    int getRulesSize() { return rulesSize; }
-    int getTotalSize() { return startSize + rulesSize; }
-    int getDepth() { return depth; }
-    uint64_t getNumMapEntries() { return map.size(); }
+    /**
+     * Loads a grammar from Navarro files.
+     *
+     * @param filenameC The grammar's C file.
+     * @param filenameR The grammar's R file.
+     * @return The grammar that was loaded.
+     * @throws Exception if the files cannot be read.
+     */
+    static CFG* fromNavarroFiles(std::string filenameC, std::string filenameR);
 
     /**
-      * Gets the character at position i in the original string.
-      *
-      * @param i The position in the original string.
-      * @return The decoded character.
-      * @throws Exception if i is out of bounds.
-      */
-    char get(uint32_t i);
+     * Loads a grammar from Big-Repair files.
+     *
+     * @param filenameC The grammar's C file.
+     * @param filenameR The grammar's R file.
+     * @return The grammar that was loaded.
+     * @throws Exception if the files cannot be read.
+     */
+    static CFG* fromBigRepairFiles(std::string filenameC, std::string filenameR);
 
-    /**
-      * Gets a substring in the original string.
-      *
-      * @param out The output stream to write the substring to.
-      * @param begin The start position of the substring in the original string.
-      * @param end The end position of the substring in the original string.
-      * @throws Exception if begin or end is out of bounds.
-      */
-    void get(std::ostream& out, uint32_t begin, uint32_t end);
+    uint64_t getTextLength() const { return textLength; }
+    int getNumRules() const { return numRules; }
+    int getRulesSize() const { return rulesSize; }
+    int getStartSize() const { return startSize; }
+    int getTotalSize() const { return startSize + rulesSize; }
+    int getDepth() const { return depth; }
 
+    //friend class RandomAccess;
 };
 
 }

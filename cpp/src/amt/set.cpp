@@ -25,7 +25,7 @@ void Set::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
             while (bits2 != 0) {
                 uint64_t bitPos2 = bits2 & -bits2; bits2 ^= bitPos2;
                 int bitNum2 = std::countr_zero(bitPos2);
-                key[off+1] = (uint8_t) bitNum2;
+                key[off + 1] = (uint8_t) bitNum2;
                 std::cerr << "key: " << get6Int(key) << std::endl;
             }
         } else {
@@ -39,6 +39,9 @@ void Set::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
 
 Set::Set(int size): currentSize(size) {
     mem = new uint64_t[currentSize];
+    for (int i = 0; i < currentSize; i++) {
+        mem[i] = 0;
+    }
     freeLists = new uint64_t[Set::FREE_LIST_SIZE];
     for (int i = 0; i < Set::FREE_LIST_SIZE; i++) {
         freeLists[i] = 0;
@@ -71,6 +74,9 @@ uint64_t Set::allocate(int size) {
             uint64_t* newMem = new uint64_t[newSize];
             for (int i = 0; i < currentSize; i++) {
                 newMem[i] = mem[i];
+            }
+            for (int i = currentSize; i < newSize; i++) {
+                newMem[i] = 0;
             }
             delete[] mem;
             mem = newMem;

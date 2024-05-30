@@ -22,7 +22,7 @@ RandomAccessAMT::RandomAccessAMT(CFG* cfg): RandomAccess(cfg)
 {
     amt::Set set(1024);
     setValues(set);
-    cset = new amt::CompressedSumSetV2(set, 6, RandomAccessAMT::getKey, RandomAccessAMT::setKey);
+    cset = new amt::CompressedSumSet(set, 6, RandomAccessAMT::getKey, RandomAccessAMT::setKey);
 }
 
 // deconstruction

@@ -1,7 +1,7 @@
 #ifndef INCLUDED_CFG_RANDOM_ACCESS_AMT
 #define INCLUDED_CFG_RANDOM_ACCESS_AMT
 
-#include "amt/compressed_sum_set_v2.hpp"
+#include "amt/compressed_sum_set.hpp"
 #include "cfg/random_access.hpp"
 
 namespace cfg {
@@ -14,7 +14,7 @@ private:
 
     static const int KEY_LENGTH = 6;
 
-    amt::CompressedSumSetV2* cset;
+    amt::CompressedSumSet* cset;
 
     void setValues(amt::Set& set);
 

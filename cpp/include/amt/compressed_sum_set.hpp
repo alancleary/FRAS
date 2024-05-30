@@ -1,5 +1,5 @@
-#ifndef INCLUDED_AMT_COMPRESSED_SUM_SET_V2
-#define INCLUDED_AMT_COMPRESSED_SUM_SET_V2
+#ifndef INCLUDED_AMT_COMPRESSED_SUM_SET
+#define INCLUDED_AMT_COMPRESSED_SUM_SET
 
 #include <cstdint>
 #include <functional>  // function
@@ -15,7 +15,7 @@ namespace amt {
  *
  * The structure is built from an existing AMT Set and is immutable.
  **/
-class CompressedSumSetV2
+class CompressedSumSet
 {
 
 private:
@@ -53,8 +53,8 @@ public:
 
     void tmp(int len);
 
-    CompressedSumSetV2(Set& set, int len, GetKey getKey, SetKey setKey);
-    ~CompressedSumSetV2();
+    CompressedSumSet(Set& set, int len, GetKey getKey, SetKey setKey);
+    ~CompressedSumSet();
 
     uint64_t size() { return count; };
 

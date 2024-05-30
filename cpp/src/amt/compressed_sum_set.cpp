@@ -2,13 +2,13 @@
 #include <bit>
 #include "amt/bitops.hpp"
 #include "amt/key.hpp"
-#include "amt/compressed_sum_set_v2.hpp"
+#include "amt/compressed_sum_set.hpp"
 
 #include <iostream>
 
 namespace amt {
 
-void CompressedSumSetV2::tmp(int len)
+void CompressedSumSet::tmp(int len)
 {
     // output values and sums
     uint8_t* key = new uint8_t[len];
@@ -16,7 +16,7 @@ void CompressedSumSetV2::tmp(int len)
     delete[] key;
 }
 
-void CompressedSumSetV2::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
+void CompressedSumSet::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
 {
     uint64_t bitMap = mem[(int) nodeRef];
     if (bitMap == 0 && !compressed[(int) nodeRef]) {
@@ -55,11 +55,11 @@ void CompressedSumSetV2::tmp(uint64_t nodeRef, uint8_t* key, int off, int len)
 
 // construction
 
-CompressedSumSetV2::CompressedSumSetV2(Set& set, int len, GetKey getKey, SetKey setKey): getKey(getKey), setKey(setKey) {
+CompressedSumSet::CompressedSumSet(Set& set, int len, GetKey getKey, SetKey setKey): getKey(getKey), setKey(setKey) {
     // initial values
     memSize = 0;
     sumCount = 0;
-    root = CompressedSumSetV2::KNOWN_EMPTY_NODE;
+    root = CompressedSumSet::KNOWN_EMPTY_NODE;
     count = set.size();
     // pre-compute the memory required
     computeCompressedSize(set, len);
@@ -75,7 +75,7 @@ CompressedSumSetV2::CompressedSumSetV2(Set& set, int len, GetKey getKey, SetKey 
     std::cerr << "memory: " << 64 * (memSize + sumCount) << " bits" << std::endl;
 }
 
-void CompressedSumSetV2::computeCompressedSize(Set& set, int len)
+void CompressedSumSet::computeCompressedSize(Set& set, int len)
 {
     int tailLen = computeCompressedSize(set, len, set.root, 0);
     // edge case: root is a tail, i.e. there's only one value in the set
@@ -87,7 +87,7 @@ void CompressedSumSetV2::computeCompressedSize(Set& set, int len)
     }
 }
 
-int CompressedSumSetV2::computeCompressedSize(Set& set, int len, uint64_t nodeRef, int off) {
+int CompressedSumSet::computeCompressedSize(Set& set, int len, uint64_t nodeRef, int off) {
     uint64_t bitMap = set.mem[(int) nodeRef];
     if (bitMap == 0) {
         return 0;
@@ -126,7 +126,7 @@ int CompressedSumSetV2::computeCompressedSize(Set& set, int len, uint64_t nodeRe
     return 0;
 }
 
-void CompressedSumSetV2::construct(Set& set, int len)
+void CompressedSumSet::construct(Set& set, int len)
 {
     uint8_t* key = new uint8_t[len];
     int idx = 1;  // idx starts at 1 because 0 is KNOWN_EMPTY_NODE
@@ -140,12 +140,12 @@ void CompressedSumSetV2::construct(Set& set, int len)
         mem[root + 1] = sum;  // should be 0
     // edge case: the set is empty
     } else if (idx == 1) {
-        root = CompressedSumSetV2::KNOWN_EMPTY_NODE;
+        root = CompressedSumSet::KNOWN_EMPTY_NODE;
     }
     delete[] key;
 }
 
-int CompressedSumSetV2::construct(Set& set, int len, uint64_t nodeRef, uint8_t* key, int off, int& idx, int& sum) {
+int CompressedSumSet::construct(Set& set, int len, uint64_t nodeRef, uint8_t* key, int off, int& idx, int& sum) {
     uint64_t bitMap = set.mem[(int) nodeRef];
     // prepare the mem indexes
     //int nodeIdx = idx;
@@ -224,7 +224,7 @@ int CompressedSumSetV2::construct(Set& set, int len, uint64_t nodeRef, uint8_t* 
 
 // destruction
 
-CompressedSumSetV2::~CompressedSumSetV2() {
+CompressedSumSet::~CompressedSumSet() {
     delete[] mem;
     delete[] compressed;
 }
@@ -232,8 +232,8 @@ CompressedSumSetV2::~CompressedSumSetV2() {
 // set operations
 
 /*
-bool CompressedSumSetV2::get(uint8_t* key, int len) {
-    if (root == CompressedSumSetV2::KNOWN_EMPTY_NODE) {
+bool CompressedSumSet::get(uint8_t* key, int len) {
+    if (root == CompressedSumSet::KNOWN_EMPTY_NODE) {
         return false;
     }
 
@@ -261,8 +261,8 @@ bool CompressedSumSetV2::get(uint8_t* key, int len) {
 }
 */
 
-uint64_t CompressedSumSetV2::predecessor(uint8_t* key, int len) {
-    if (root == CompressedSumSetV2::KNOWN_EMPTY_NODE) {
+uint64_t CompressedSumSet::predecessor(uint8_t* key, int len) {
+    if (root == CompressedSumSet::KNOWN_EMPTY_NODE) {
         throw std::runtime_error("No key to select");
     }
 
@@ -270,7 +270,7 @@ uint64_t CompressedSumSetV2::predecessor(uint8_t* key, int len) {
     uint64_t nodeRef = root;
     int off = 0;
 
-    uint64_t nearestNodeRef = CompressedSumSetV2::KNOWN_EMPTY_NODE;
+    uint64_t nearestNodeRef = CompressedSumSet::KNOWN_EMPTY_NODE;
     int nearestOff = 0;
 
     for (;;) {
@@ -345,9 +345,9 @@ uint64_t CompressedSumSetV2::predecessor(uint8_t* key, int len) {
     }
 }
 
-uint64_t CompressedSumSetV2::predecessor(uint64_t nodeRef, uint8_t* key, int off, int len) {
+uint64_t CompressedSumSet::predecessor(uint64_t nodeRef, uint8_t* key, int off, int len) {
     // no smaller key exists
-    if (nodeRef == CompressedSumSetV2::KNOWN_EMPTY_NODE) {
+    if (nodeRef == CompressedSumSet::KNOWN_EMPTY_NODE) {
         throw std::runtime_error("No key to select");
     }
 
@@ -397,15 +397,15 @@ uint64_t CompressedSumSetV2::predecessor(uint64_t nodeRef, uint8_t* key, int off
 }
 
 /*
-bool CompressedSumSetV2::successor(uint8_t* key, int len) {
-    if (root == CompressedSumSetV2::KNOWN_EMPTY_NODE) {
+bool CompressedSumSet::successor(uint8_t* key, int len) {
+    if (root == CompressedSumSet::KNOWN_EMPTY_NODE) {
         return false;
     }
 
     uint64_t nodeRef = root;
     int off = 0;
 
-    uint64_t nearestNodeRef = CompressedSumSetV2::KNOWN_EMPTY_NODE;
+    uint64_t nearestNodeRef = CompressedSumSet::KNOWN_EMPTY_NODE;
     int nearestOff = 0;
 
     for (;;) {
@@ -448,9 +448,9 @@ bool CompressedSumSetV2::successor(uint8_t* key, int len) {
 */
 
 /*
-bool CompressedSumSetV2::successor(uint64_t nodeRef, uint8_t* key, int off, int len) {
+bool CompressedSumSet::successor(uint64_t nodeRef, uint8_t* key, int off, int len) {
     // no smaller key exists
-    if (nodeRef == CompressedSumSetV2::KNOWN_EMPTY_NODE) {
+    if (nodeRef == CompressedSumSet::KNOWN_EMPTY_NODE) {
         return false;
     }
 

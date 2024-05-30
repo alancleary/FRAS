@@ -77,10 +77,8 @@ void RandomAccessAMT::rankSelect(uint64_t i, int& rank, uint64_t& select)
     uint8_t* key = new uint8_t[KEY_LENGTH];
     // i+1 because rank is exclusive [0, i) and we want inclusive [0, i]
     amt::set6Int(key, (uint32_t) i + 1);
-    // -1 because the first bit is always set and we want a 0-based rank
-    rank = (int) cset->predecessor(key, KEY_LENGTH) - 1;
-    // TODO: implement select support
-    select = i;
+    rank = (int) cset->predecessor(key, KEY_LENGTH);
+    select = (uint64_t) amt::get6Int(key);
     delete[] key;
 }
 

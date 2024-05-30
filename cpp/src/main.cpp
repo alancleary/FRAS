@@ -7,6 +7,7 @@
 #include "cfg/random_access_bv.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/rank_support_v.hpp>
+#include <sdsl/select_support_mcl.hpp>
 
 using namespace std;
 using namespace cfg;
@@ -59,7 +60,7 @@ int main(int argc, char* argv[])
 
     // instantiate grammars
     RandomAccessAMT amt(cfg);
-    RandomAccessBV<sdsl::bit_vector, sdsl::rank_support_v5<>> bv(cfg);
+    RandomAccessBV<sdsl::bit_vector, sdsl::rank_support_v5<>, sdsl::select_support_mcl<>> bv(cfg);
     
     // generate the original text
     //cfg->get(cout, 0, cfg->getTextLength() - 1);

@@ -12,9 +12,10 @@ void RandomAccess::get(std::ostream& out, uint64_t begin, uint64_t end)
         throw std::runtime_error("begin/end out of bounds");
     }
 
-    int i, r = cfg->startRule;
+    int rank, r = cfg->startRule;
     uint64_t selected;
-    rankSelect(begin, i, selected);
+    rankSelect(begin, rank, selected);
+    int i = rank - 1;
     uint64_t length = end - selected;
     uint64_t ignore = begin - selected;
     // TODO: stacks should be preallocated to size of max depth

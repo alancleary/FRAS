@@ -6,7 +6,7 @@
 namespace cfg {
 
 /** Indexes a CFG for random access using a bit vector. */
-template <class sdsl_bv, class sdsl_rank>
+template <class sdsl_bv, class sdsl_rank, class sdsl_select>
 class RandomAccessBV : public RandomAccess
 {
 
@@ -14,6 +14,7 @@ private:
 
     sdsl_bv bitvector;
     sdsl_rank bitvector_rank;
+    sdsl_select bitvector_select;
 
     void setBits()
     {
@@ -52,10 +53,8 @@ private:
     void rankSelect(uint64_t i, int& rank, uint64_t& select)
     {
         // i+1 because rank is exclusive [0, i) and we want inclusive [0, i]
-        // -1 because the first bit is always set and we want a 0-based rank
-        rank = bitvector_rank.rank(i + 1) - 1;  // -1 because rank(0) = 1
-        // TODO: implement select support
-        select = i;
+        rank = bitvector_rank.rank(i + 1);
+        select = bitvector_select.select(rank);
     }
 
 public:
@@ -65,6 +64,7 @@ public:
         bitvector = sdsl_bv(cfg->textLength, 0);
         setBits();
         bitvector_rank = sdsl_rank(&bitvector);
+        bitvector_select = sdsl_select(&bitvector);
     }
 
 };

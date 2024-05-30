@@ -1,13 +1,12 @@
 #include <iostream>
 #include <chrono>
 #include <random>
-//#include "cfg/cfg.hpp"
-#include "cfg/compressed-indexed-cfg.hpp"
-#include "cfg/compressed-indexed-cfg_v2.hpp"
-#include "cfg/bitvector-indexed-cfg.hpp"
-//#include "cfg/indexed-cfg.hpp"
 
-//#include "amt/key.hpp"
+#include "cfg/cfg.hpp"
+#include "cfg/random_access_amt.hpp"
+#include "cfg/random_access_bv.hpp"
+#include <sdsl/bit_vectors.hpp>
+#include <sdsl/rank_support_v.hpp>
 
 using namespace std;
 using namespace cfg;
@@ -23,39 +22,13 @@ void usage(int argc, char* argv[]) {
     cerr << "\tfilename: the name of the grammar file(s) without the extension(s)" << endl;
 }
 
-CompressedIndexedCFG* loadGrammar(string type, string filename) {
+CFG* loadGrammar(string type, string filename) {
     if (type == "mrrepair") {
-        return CompressedIndexedCFG::fromMrRepairFile(filename + ".out");
+        return CFG::fromMrRepairFile(filename + ".out");
     } else if (type == "navarro") {
-        return CompressedIndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
+        return CFG::fromNavarroFiles(filename + ".C", filename + ".R");
     } else if (type == "bigrepair") {
-        return CompressedIndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
-    }
-    cerr << "invalid grammar type: \"" << type << "\"" << endl;
-    cerr << endl;
-    return NULL;
-}
-
-CompressedIndexedCFGV2* loadGrammarV2(string type, string filename) {
-    if (type == "mrrepair") {
-        return CompressedIndexedCFGV2::fromMrRepairFile(filename + ".out");
-    } else if (type == "navarro") {
-        return CompressedIndexedCFGV2::fromNavarroFiles(filename + ".C", filename + ".R");
-    } else if (type == "bigrepair") {
-        return CompressedIndexedCFGV2::fromBigRepairFiles(filename + ".C", filename + ".R");
-    }
-    cerr << "invalid grammar type: \"" << type << "\"" << endl;
-    cerr << endl;
-    return NULL;
-}
-
-BitvectorIndexedCFG* loadBitvectorGrammar(string type, string filename) {
-    if (type == "mrrepair") {
-        return BitvectorIndexedCFG::fromMrRepairFile(filename + ".out");
-    } else if (type == "navarro") {
-        return BitvectorIndexedCFG::fromNavarroFiles(filename + ".C", filename + ".R");
-    } else if (type == "bigrepair") {
-        return BitvectorIndexedCFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+        return CFG::fromBigRepairFiles(filename + ".C", filename + ".R");
     }
     cerr << "invalid grammar type: \"" << type << "\"" << endl;
     cerr << endl;
@@ -74,102 +47,59 @@ int main(int argc, char* argv[])
     // load the grammar
     string type = argv[1];
     string filename = argv[2];
+    CFG* cfg = loadGrammar(type, filename);
 
-    CompressedIndexedCFG* cfg = loadGrammar(type, filename);
+    // print grammar stats
     cerr << "text length: " << cfg->getTextLength() << endl;
     cerr << "num rules: " << cfg->getNumRules() << endl;
     cerr << "start size: " << cfg->getStartSize() << endl;
     cerr << "rules size: " << cfg->getRulesSize() << endl;
     cerr << "total size: " << cfg->getTotalSize() << endl;
     cerr << "depth: " << cfg->getDepth() << endl;
-    //std::cerr << std::endl;
-    //cfg->tmp();
-    std::cerr << std::endl;
 
-    CompressedIndexedCFGV2* cfgV2 = loadGrammarV2(type, filename);
-    cerr << "text length: " << cfgV2->getTextLength() << endl;
-    cerr << "num rules: " << cfgV2->getNumRules() << endl;
-    cerr << "start size: " << cfgV2->getStartSize() << endl;
-    cerr << "rules size: " << cfgV2->getRulesSize() << endl;
-    cerr << "total size: " << cfgV2->getTotalSize() << endl;
-    cerr << "depth: " << cfgV2->getDepth() << endl;
-    //std::cerr << std::endl;
-    //cfgV2->tmp();
-    std::cerr << std::endl;
-
-    BitvectorIndexedCFG* cfgBV = loadBitvectorGrammar(type, filename);
-    cerr << "text length: " << cfgBV->getTextLength() << endl;
-    cerr << "num rules: " << cfgBV->getNumRules() << endl;
-    cerr << "start size: " << cfgBV->getStartSize() << endl;
-    cerr << "rules size: " << cfgBV->getRulesSize() << endl;
-    cerr << "total size: " << cfgBV->getTotalSize() << endl;
-    cerr << "depth: " << cfgBV->getDepth() << endl;
-    cerr << "memory: " << cfgBV->getMemSize() << " bits" << endl;
-    cerr << "memory v5: " << cfgBV->getMemSizeV5() << " bits" << endl;
-    cerr << "memory il: " << cfgBV->getMemSizeIl() << " bits" << endl;
-    //cerr << "memory rrr: " << cfgBV->getMemSizeRRR() << " bits" << endl;
-    cerr << "memory sparse: " << cfgBV->getMemSizeSparse() << " bits" << endl;
-    std::cerr << std::endl;
-
-    /*
-    cerr << endl;
-    cerr << "map entries: " << cfg->getNumMapEntries() << endl;
-    cerr << "map size: " << cfg->getMapSize() << endl;
-    cerr << endl;
-    auto tailInfo = cfg->tailInfo();
-    cerr << "map num tails: " << tailInfo.first << endl;
-    cerr << "map total tail nodes: " << tailInfo.second << endl;
-    cerr << endl;
-    */
+    // instantiate grammars
+    RandomAccessAMT amt(cfg);
+    RandomAccessBV<sdsl::bit_vector, sdsl::rank_support_v5<>> bv(cfg);
     
     // generate the original text
     //cfg->get(cout, 0, cfg->getTextLength() - 1);
 
     // benchmarks
     chrono::steady_clock::time_point startTime, endTime;
-    uint64_t duration = 0;
-    uint64_t durationV2 = 0;
-    uint64_t bitvectorDuration = 0;
-    int numQueries = 10000, querySize = 1000;
+    uint64_t durationAMT = 0;
+    uint64_t durationBV = 0;
+    uint64_t numQueries = 10000, querySize = 1000;
     random_device rd;
     mt19937 gen(rd());
-    uniform_int_distribution<uint32_t> distr(0, cfg->getTextLength() - querySize);
-    uint32_t begin, end;
+    uniform_int_distribution<uint64_t> distr(0, cfg->getTextLength() - querySize);
+    uint64_t begin, end;
 
-    cout.setstate(std::ios::failbit);
-    for (int i = 0; i < numQueries; i++) {
+    //cout.setstate(std::ios::failbit);
+    for (uint64_t i = 0; i < numQueries; i++) {
         begin = distr(gen);
         end = begin + querySize - 1;
 
-        // AMT query
+        // AMT
         startTime = chrono::steady_clock::now();
-        cfg->get(cout, begin, end);
+        amt.get(cout, begin, end);
         endTime = chrono::steady_clock::now();
-        duration += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+        durationAMT += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        // AMTv2 query
+        // BV
         startTime = chrono::steady_clock::now();
-        cfgV2->get(cout, begin, end);
+        bv.get(cout, begin, end);
         endTime = chrono::steady_clock::now();
-        durationV2 += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
-
-        // bitvector query
-        startTime = chrono::steady_clock::now();
-        cfgBV->get(cout, begin, end);
-        endTime = chrono::steady_clock::now();
-        bitvectorDuration += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+        durationBV += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
         begin = distr(gen);
         end = begin + querySize - 1;
     }
 
-    cerr << "average AMT query time: " << duration / numQueries << "[µs]" << endl;
+    cerr << "average AMT query time: " << durationAMT / numQueries << "[µs]" << endl;
 
-    cerr << "average AMT V2 query time: " << durationV2 / numQueries << "[µs]" << endl;
+    cerr << "average BV query time: " << durationBV / numQueries << "[µs]" << endl;
 
-    cerr << "average bitvector query time: " << bitvectorDuration / numQueries << "[µs]" << endl;
-
-    //delete cfg;
+    delete cfg;
 
     return 1;
 }

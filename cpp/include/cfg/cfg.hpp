@@ -29,10 +29,19 @@ public:
     int startSize = 0;
     int depth = 0;
 
-    void computeDepthAndTextSize();
+private:
     void computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule);
 
-//public:
+    void reorderRules(uint64_t* ruleSizes);
+
+    void postProcess();
+
+public:
+
+    uint64_t memSize()
+    {
+        return sizeof(int) * (startSize + rulesSize);
+    }
 
     CFG();
     ~CFG();

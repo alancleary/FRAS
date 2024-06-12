@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdio>  // FILE
 #include <fstream>
+#include <map>
 #include <sys/stat.h>
 #include "cfg/cfg.hpp"
 
@@ -22,25 +23,6 @@ CFG::~CFG()
 
 // private
 
-void CFG::computeDepthAndTextSize()
-{
-    uint64_t* ruleSizes = new uint64_t[startRule + 1];
-    int* ruleDepths = new int[startRule + 1];
-    for (int i = 0; i < CFG::ALPHABET_SIZE; i++) {
-        ruleSizes[i] = 1;
-        ruleDepths[i] = 1;
-    }
-    for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
-        ruleSizes[i] = 0;
-        ruleDepths[i] = 0;
-    }
-    computeDepthAndTextSize(ruleSizes, ruleDepths, startRule);
-    textLength = ruleSizes[startRule];
-    depth = ruleDepths[startRule];
-    delete[] ruleSizes;
-    delete[] ruleDepths;
-}
-
 void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule)
 {
     if (ruleSizes[rule] != 0) return;
@@ -54,6 +36,86 @@ void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule
         ruleDepths[rule] = std::max(ruleDepths[rule], ruleDepths[c]);
     }
     ruleDepths[rule]++;
+}
+
+void CFG::reorderRules(uint64_t* ruleSizes)
+{
+    // count how many times each expansion length occurs
+    std::map<uint64_t, int> sizeMap;
+    uint64_t size;
+    for (int i = CFG::ALPHABET_SIZE; i < startRule; i++) {
+        size = ruleSizes[i];
+        if (!sizeMap.contains(size)) {
+            sizeMap[size] = 0;
+        }
+        sizeMap[size] += 1;
+    }
+
+    // compute the last occurrence of each expansion length in the new ordering
+    int offset = CFG::ALPHABET_SIZE - 1;
+    int nextOffset = offset;
+    for (auto& [size, count] : sizeMap) {
+        nextOffset += count;
+        count += offset;
+        offset = nextOffset;
+    }
+
+    // assign new rule characters using the last occurrences
+    int* newOrdering = new int[startRule + 1];
+    for (int i = CFG::ALPHABET_SIZE; i < startRule; i++) {
+        size = ruleSizes[i];
+        newOrdering[i] = sizeMap[size]--;
+    }
+    newOrdering[startRule] = startRule;
+
+    // reorder the rules and update characters
+    int** newRules = new int*[startRule + 1];
+    int c, newIndex;
+    for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
+        for (int j = 0; (c = rules[i][j]) != CFG::DUMMY_CODE; j++) {
+            if (c < CFG::ALPHABET_SIZE) {
+                rules[i][j] = c;
+            } else {
+                rules[i][j] = newOrdering[c];
+            }
+        }
+        newIndex = newOrdering[i];
+        newRules[newIndex] = rules[i];
+    }
+    delete[] rules;
+    rules = newRules;
+
+    // clean up
+    delete[] newOrdering;
+}
+
+void CFG::postProcess()
+{
+    // prepare post-processing structures
+    uint64_t* ruleSizes = new uint64_t[startRule + 1];
+    int* ruleDepths = new int[startRule + 1];
+    for (int i = 0; i < CFG::ALPHABET_SIZE; i++) {
+        ruleSizes[i] = 1;
+        ruleDepths[i] = 1;
+    }
+    for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
+        ruleSizes[i] = 0;
+        ruleDepths[i] = 0;
+    }
+
+    // compute the depth and text length
+    computeDepthAndTextSize(ruleSizes, ruleDepths, startRule);
+    textLength = ruleSizes[startRule];
+    depth = ruleDepths[startRule];
+
+    // clean up depths
+    delete[] ruleDepths;
+
+    // order the rules by expansion length; shortest to longest
+    reorderRules(ruleSizes);
+
+    // clean up rule sizes
+    delete[] ruleSizes;
 }
 
 // load grammars
@@ -108,7 +170,7 @@ CFG* CFG::fromMrRepairFile(std::string filename)
     cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
 
     // compute grammar depth and text length
-    cfg->computeDepthAndTextSize();
+    cfg->postProcess();
 
     return cfg;
 }
@@ -189,7 +251,7 @@ CFG* CFG::fromNavarroFiles(std::string filenameC, std::string filenameR)
     cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
 
     // compute grammar depth and text length
-    cfg->computeDepthAndTextSize();
+    cfg->postProcess();
 
     return cfg;
 }
@@ -205,7 +267,7 @@ CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
     // get the .R file size
     struct stat s;
     stat(filenameR.c_str(), &s);
-    int len = s.st_size;
+    unsigned int len = s.st_size;
 
     // open the .R file
     FILE* rFile = fopen(filenameR.c_str(), "r");
@@ -267,7 +329,7 @@ CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
     cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
 
     // compute grammar depth and text length
-    cfg->computeDepthAndTextSize();
+    cfg->postProcess();
 
     return cfg;
 }

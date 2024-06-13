@@ -6,7 +6,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # setup the CMake project
-project("SLP-folklore"
+project("fras"
         VERSION 0.0.1
         DESCRIPTION "Represents a context-free grammar as an array mapped trie"
         LANGUAGES CXX

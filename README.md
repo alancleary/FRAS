@@ -20,16 +20,16 @@ To build the code in using the files in the `build/` directory, run:
 ```bash
 cmake --build build
 ```
-This will generate an `SLP-folklore` executable in the `build/` directory.
+This will generate an `fras` executable in the `build/` directory.
 If you make changes to the code, you only have to run this command to recompile the code.
 
 
 ## Running
 
-`SLP-folklore` uses a command-line interface (CLI).
+`fras` uses a command-line interface (CLI).
 Its usage instructions are as follows:
 ```bash
-usage: ./build/SLP-folklore <type> <filename>
+usage: ./build/fras <type> <filename>
 
 args:
 	type={mrrepair|navarro|bigrepair}: the type of grammar to load
@@ -43,5 +43,5 @@ What the program outputs depends on what is currently being developed.
 Generally, information for the user will be sent to the standard error and program outputs, such as strings generated from random access queries, will be sent to the standard output.
 For this reason, it's recommended to always redirect the standard output to a file.
 ```bash
-./build/SLP-folklore <type> <filename> &> /dev/null
+./build/fras <type> <filename> &> /dev/null
 ```

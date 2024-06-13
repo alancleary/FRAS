@@ -1,12 +1,13 @@
 #include <iostream>
 #include <chrono>
-#include <random>
+//#include <random>
 
 #include "cfg/cfg.hpp"
 //#include "cfg/random_access_amt.hpp"
 //#include "cfg/random_access_bv.hpp"
 //#include "cfg/random_access_v2_bv.hpp"
 #include "cfg/random_access_v2_sd.hpp"
+#include "xoroshiro/xoroshiro128plus.hpp"
 
 using namespace std;
 using namespace cfg;
@@ -79,14 +80,26 @@ int main(int argc, char* argv[])
     //uint64_t durationBV2 = 0;
     uint64_t durationSD = 0;
     uint64_t numQueries = 10000, querySize = 1000;
-    random_device rd;
-    mt19937 gen(rd());
-    uniform_int_distribution<uint64_t> distr(0, cfg->getTextLength() - querySize);
+    //random_device rd;
+    //mt19937 gen(rd());
+    //uniform_int_distribution<uint64_t> distr(0, cfg->getTextLength() - querySize);
+
+    xoroshiro::xoroshiro128plus_engine eng;
+
+    std::random_device dev{};
+    eng.seed([&dev]() { return dev(); });
+
+    std::uniform_real_distribution<> dist(0.0, 1.0);
+
+    for (int i = 0; i < 20; i++)
+      std::cout << dist(eng) << std::endl;
+
     uint64_t begin, end;
 
     //cout.setstate(std::ios::failbit);
     for (uint64_t i = 0; i < numQueries; i++) {
-        begin = distr(gen);
+        //begin = distr(gen);
+        begin = (cfg->getTextLength() - querySize) * dist(eng);
         end = begin + querySize - 1;
 
         // AMT
@@ -116,8 +129,8 @@ int main(int argc, char* argv[])
         endTime = chrono::steady_clock::now();
         durationSD += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        begin = distr(gen);
-        end = begin + querySize - 1;
+        //begin = distr(gen);
+        //end = begin + querySize - 1;
     }
 
     //cerr << "average AMT query time: " << durationAMT / numQueries << "[µs]" << endl;

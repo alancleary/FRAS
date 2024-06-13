@@ -1,4 +1,4 @@
-# SLP Folklore Random Access
+# FRAS: Folklore Random Access for SLPs
 
 This repo contains a modified version of the folklore algorithm for random access to grammar-compressed strings.
 The original folklore algorithm only works on grammars in Chomsky normal form and is not space efficient.

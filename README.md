@@ -37,9 +37,9 @@ args:
 		navarro: for grammars created with Navarro's implementation of RePair
 		bigrepair: for grammars created with Manzini's implementation of Big-Repair
 	filename: the name of the grammar file(s) without the extension(s)
-    querysize: the size of the substring to query for when benchmarking
-    numqueries: the number of queries to run when benchmarking
-    seed: the seed to use with the pseudo-random number generator
+	querysize: the size of the substring to query for when benchmarking
+	numqueries: the number of queries to run when benchmarking
+	seed: the seed to use with the pseudo-random number generator
 ```
 
 What the program outputs depends on what is currently being developed.

@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
 
     uint64_t begin, end;
     char* out = new char[querySize];
-    std::vector<uint64_t> times(numLoops);
+    std::vector<double> times(numLoops);
 
     //cout.setstate(std::ios::failbit);
     for (int i = 0; i < numLoops; i++) {
-      uint64_t durationSD = 0;
+      double durationSD = 0;
       for (int j = 0; j < numQueries; j++) {
           //begin = distr(gen);
           begin = (cfg->getTextLength() - querySize) * dist(eng);

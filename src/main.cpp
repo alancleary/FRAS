@@ -1,6 +1,6 @@
 #include <iostream>
 #include <chrono>
-//#include <random>
+#include <vector>
 
 #include "cfg/cfg.hpp"
 //#include "cfg/random_access_amt.hpp"
@@ -13,7 +13,7 @@ using namespace std;
 using namespace cfg;
 
 void usage(int argc, char* argv[]) {
-    cerr << "usage: " << argv[0] << " <type> <filename>" << endl;
+    cerr << "usage: " << argv[0] << " <type> <filename> <querysize> [numqueries=10000] [seed=random_device]" << endl;
     cerr << endl;
     cerr << "args: " << endl;
     cerr << "\ttype={mrrepair|navarro|bigrepair}: the type of grammar to load" << endl;
@@ -21,6 +21,9 @@ void usage(int argc, char* argv[]) {
     cerr << "\t\tnavarro: for grammars created with Navarro's implementation of RePair" << endl;
     cerr << "\t\tbigrepair: for grammars created with Manzini's implementation of Big-Repair" << endl;
     cerr << "\tfilename: the name of the grammar file(s) without the extension(s)" << endl;
+    cerr << "\tquerysize: the size of the substring to query for when benchmarking" << endl;
+    cerr << "\tnumqueries: the number of queries to run when benchmarking" << endl;
+    cerr << "\tseed: the seed to use with the pseudo-random number generator" << endl;
 }
 
 CFG* loadGrammar(string type, string filename) {
@@ -40,10 +43,27 @@ int main(int argc, char* argv[])
 {
 
     // check the command-line arguments
-    if (argc < 3) {
+    if (argc < 4) {
       usage(argc, argv);
       return 1;
     }
+
+    // get benchmark parameters
+    uint32_t querySize = std::stoi(argv[3]);
+    uint32_t numQueries = 10000;
+    if (argc >= 5) {
+      numQueries = std::stoi(argv[4]);
+    }
+
+    // setup the pseudo-random number generator
+    xoroshiro::xoroshiro128plus_engine eng;
+    if (argc >= 6) {
+      eng.seed([&argv]() { return std::stoi(argv[5]); });
+    } else {
+      std::random_device dev{};
+      eng.seed([&dev]() { return dev(); });
+    }
+    std::uniform_real_distribution<> dist(0.0, 1.0);
 
     // load the grammar
     string type = argv[1];
@@ -78,60 +98,57 @@ int main(int argc, char* argv[])
     //uint64_t durationAMT = 0;
     //uint64_t durationBV = 0;
     //uint64_t durationBV2 = 0;
-    uint64_t durationSD = 0;
-    uint64_t numQueries = 10000, querySize = 1000;
-    //random_device rd;
-    //mt19937 gen(rd());
-    //uniform_int_distribution<uint64_t> distr(0, cfg->getTextLength() - querySize);
-
-    xoroshiro::xoroshiro128plus_engine eng;
-
-    std::random_device dev{};
-    eng.seed([&dev]() { return dev(); });
-
-    std::uniform_real_distribution<> dist(0.0, 1.0);
-
-    for (int i = 0; i < 20; i++)
-      std::cout << dist(eng) << std::endl;
+    //uint64_t durationSD = 0;
+    uint32_t numLoops = 11;
 
     uint64_t begin, end;
+    char* out = new char[querySize];
+    std::vector<uint64_t> times(numLoops);
 
     //cout.setstate(std::ios::failbit);
-    for (uint64_t i = 0; i < numQueries; i++) {
-        //begin = distr(gen);
-        begin = (cfg->getTextLength() - querySize) * dist(eng);
-        end = begin + querySize - 1;
+    for (int i = 0; i < numLoops; i++) {
+      uint64_t durationSD = 0;
+      for (int j = 0; j < numQueries; j++) {
+          //begin = distr(gen);
+          begin = (cfg->getTextLength() - querySize) * dist(eng);
+          //std::cerr << begin << std::endl;
+          end = begin + querySize - 1;
 
-        // AMT
-        //startTime = chrono::steady_clock::now();
-        //amt.get(cout, begin, end);
-        //endTime = chrono::steady_clock::now();
-        //durationAMT += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+          // AMT
+          //startTime = chrono::steady_clock::now();
+          //amt.get(cout, begin, end);
+          //endTime = chrono::steady_clock::now();
+          //durationAMT += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        // BV
-        //startTime = chrono::steady_clock::now();
-        //bv.get(cout, begin, end);
-        //endTime = chrono::steady_clock::now();
-        //durationBV += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+          // BV
+          //startTime = chrono::steady_clock::now();
+          //bv.get(cout, begin, end);
+          //endTime = chrono::steady_clock::now();
+          //durationBV += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        //begin = distr(gen);
-        //end = begin + querySize - 1;
+          //begin = distr(gen);
+          //end = begin + querySize - 1;
 
-        // BV2
-        //startTime = chrono::steady_clock::now();
-        //bv2.get(cout, begin, end);
-        //endTime = chrono::steady_clock::now();
-        //durationBV2 += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+          // BV2
+          //startTime = chrono::steady_clock::now();
+          //bv2.get(cout, begin, end);
+          //endTime = chrono::steady_clock::now();
+          //durationBV2 += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        // SD
-        startTime = chrono::steady_clock::now();
-        sd.get(cout, begin, end);
-        endTime = chrono::steady_clock::now();
-        durationSD += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
+          // SD
+          startTime = chrono::steady_clock::now();
+          //sd.get(cout, begin, end);
+          sd.get(out, begin, end);
+          endTime = chrono::steady_clock::now();
+          durationSD += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
 
-        //begin = distr(gen);
-        //end = begin + querySize - 1;
+          //begin = distr(gen);
+          //end = begin + querySize - 1;
+      }
+
+      times[i] = durationSD / numQueries;
     }
+    std::sort(times.begin(), times.end());
 
     //cerr << "average AMT query time: " << durationAMT / numQueries << "[µs]" << endl;
 
@@ -139,8 +156,9 @@ int main(int argc, char* argv[])
 
     //cerr << "average BV2 query time: " << durationBV2 / numQueries << "[µs]" << endl;
 
-    cerr << "average SD query time: " << durationSD / numQueries << "[µs]" << endl;
+    cerr << "average SD query time: " << times[numLoops / 2] << "[µs]" << endl;
 
+    delete[] out;
     delete cfg;
 
     return 1;

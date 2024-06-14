@@ -1,4 +1,4 @@
-#include <stack>
+//#include <stack>
 #include <stdexcept>
 #include "cfg/random_access_v2.hpp"
 
@@ -6,11 +6,12 @@ namespace cfg {
 
 // random access
 
-void RandomAccessV2::get(std::ostream& out, uint64_t begin, uint64_t end)
+//void RandomAccessV2::get(std::ostream& out, uint64_t begin, uint64_t end)
+void RandomAccessV2::get(char* out, uint64_t begin, uint64_t end)
 {
-    if (begin < 0 || end >= cfg->textLength || begin > end) {
-        throw std::runtime_error("begin/end out of bounds");
-    }
+    //if (begin < 0 || end >= cfg->textLength || begin > end) {
+    //    throw std::runtime_error("begin/end out of bounds");
+    //}
     uint64_t length = end - begin;
 
     // get the start rule character to start parsing at
@@ -22,8 +23,8 @@ void RandomAccessV2::get(std::ostream& out, uint64_t begin, uint64_t end)
     // descend the parse tree to the correct start position
     uint64_t size, ignore = begin - selected;
     // TODO: stacks should be preallocated to size of max depth
-    std::stack<int> ruleStack;
-    std::stack<int> indexStack;
+    //std::stack<int> ruleStack;
+    //std::stack<int> indexStack;
     while (ignore > 0) {
         // terminal character 
         if (cfg->rules[r][i] < CFG::ALPHABET_SIZE) {
@@ -54,7 +55,8 @@ void RandomAccessV2::get(std::ostream& out, uint64_t begin, uint64_t end)
             indexStack.pop();
         // terminal character 
         } else if (cfg->rules[r][i] < CFG::ALPHABET_SIZE) {
-            out << (char) cfg->rules[r][i];
+            //out << (char) cfg->rules[r][i];
+            out[j] = (char) cfg->rules[r][i];
             i++;
             j++;
         // non-terminal character

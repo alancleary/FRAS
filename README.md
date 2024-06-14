@@ -11,13 +11,13 @@ Currently this implementation can load grammars generated using RePair (Navarro'
 
 The project uses the [CMake](https://cmake.org/) meta-build system to generate build files specific to your environment.
 Generate the build files as follows:
-```bash
+```console
 cmake -B build .
 ```
 This will create a `build/` directory containing all the build files.
 
 To build the code in using the files in the `build/` directory, run:
-```bash
+```console
 cmake --build build
 ```
 This will generate an `fras` executable in the `build/` directory.
@@ -28,8 +28,8 @@ If you make changes to the code, you only have to run this command to recompile 
 
 `fras` uses a command-line interface (CLI).
 Its usage instructions are as follows:
-```bash
-usage: ./build/fras <type> <filename>
+```console
+usage: ./build/fras <type> <filename> <querysize> [numqueries=10000] [seed=random_device]
 
 args:
 	type={mrrepair|navarro|bigrepair}: the type of grammar to load
@@ -37,11 +37,14 @@ args:
 		navarro: for grammars created with Navarro's implementation of RePair
 		bigrepair: for grammars created with Manzini's implementation of Big-Repair
 	filename: the name of the grammar file(s) without the extension(s)
+    querysize: the size of the substring to query for when benchmarking
+    numqueries: the number of queries to run when benchmarking
+    seed: the seed to use with the pseudo-random number generator
 ```
 
 What the program outputs depends on what is currently being developed.
 Generally, information for the user will be sent to the standard error and program outputs, such as strings generated from random access queries, will be sent to the standard output.
 For this reason, it's recommended to always redirect the standard output to a file.
-```bash
-./build/fras <type> <filename> &> /dev/null
+```console
+./build/fras <type> <filename> <querysize> &> /dev/null
 ```

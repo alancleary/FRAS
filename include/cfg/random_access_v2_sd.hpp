@@ -44,7 +44,7 @@ private:
         uint64_t pos = 0;
         int c;
         for (int i = 0; i < cfg->startSize; i++) {
-            c = cfg->rules[cfg->startRule][i];
+            c = CFG::unpack(cfg->startRule, i);
             tmpStartBitvector[pos] = 1;
             pos += ruleSize(ruleSizes, c);
         }
@@ -83,7 +83,8 @@ private:
         if (ruleSizes[rule] != 0) return ruleSizes[rule];
 
         int c;
-        for (int i = 0; (c = cfg->rules[rule][i]) != CFG::DUMMY_CODE; i++) {
+        for (int i = 0; CFG::ruleLengths[rule] > i; i++) {
+            c = CFG::unpack(rule, i);
             if (ruleSizes[c] == 0) {
                 ruleSize(ruleSizes, c);
             }

@@ -2,6 +2,8 @@
 #define INCLUDED_CFG_CFG
 
 #include <string>
+#include <cstdint>
+
 //#include "cfg/random_access.hpp"
 
 namespace cfg {
@@ -25,16 +27,19 @@ public:
     int numRules = 0;
     int rulesSize = 0;
     int** rules;
+    static void** newRules;
     int startRule;
     int startSize = 0;
     int depth = 0;
 
+
+
 private:
     void computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule);
-
     void reorderRules(uint64_t* ruleSizes);
-
     void postProcess();
+
+
 
 public:
 
@@ -83,8 +88,16 @@ public:
     int getDepth() const { return depth; }
 
     //friend class RandomAccess;
+
+    static int MSB(int number);
+    static int typeSize(int bits);
+    static void* createArray(int type, int size);
+    static int unpack(int rule, int pos);
+    static int* ruleLengths;
+    static int* innerLengths;
+    };
 };
 
-}
+
 
 #endif

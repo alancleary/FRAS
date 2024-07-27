@@ -3,7 +3,17 @@
 #include <fstream>
 #include <map>
 #include <sys/stat.h>
+#include <cmath>
+#include <vector>
+#include <variant>
+#include <bitset>
+#include <iostream>
 #include "cfg/cfg.hpp"
+
+// need ways to store inner array lengths and rule lengths somehow, probably better solutions that are smaller
+int* cfg::CFG::innerLengths;
+int* cfg::CFG::ruleLengths;
+void** cfg::CFG::newRules;
 
 namespace cfg {
 
@@ -19,9 +29,152 @@ CFG::~CFG()
         delete[] rules[i];
     }
     delete[] rules;
+
 }
 
 // private
+
+//this unpacks the bitpacked character based on rule and position among right hand side rules
+int CFG::unpack(int rule, int pos) {
+    // Get the MSB used for every RHS rule
+    int divider = MSB(rule - 1);
+    // Get the smallest array size for that rule
+    int bitSize = typeSize(divider);
+    // actual position after bitwidths taken into account
+    int realPos = divider * pos;
+    // have to store lengths of the packed bits (6 characters packed into 4 elements, this variable gets the 6);
+    int innerLength = innerLengths[rule];
+
+
+    // bit manipulation to isolate correct bits
+    if (bitSize == 8) {
+        uint8_t* subarray = static_cast<uint8_t*>(newRules[rule]);
+        int totalBits = innerLength * 8;
+        if (realPos + divider > totalBits) {
+            throw std::out_of_range("realPos exceeds bitStore size");
+        }
+        int byteIndex = realPos / 8;
+        int bitOffset = realPos % 8;
+        uint64_t value = 0;
+        for (int i = 0; i < divider; i++) {
+            value |= ((subarray[byteIndex] >> (7 - bitOffset)) & 1) << (divider - 1 - i);
+            bitOffset++;
+            if (bitOffset == 8) {
+                bitOffset = 0;
+                byteIndex++;
+            }
+        }
+        return static_cast<int>(value);
+    } else if (bitSize == 16) {
+        uint16_t* subarray = static_cast<uint16_t*>(newRules[rule]);
+        int totalBits = innerLength * 16;
+        if (realPos + divider > totalBits) {
+            throw std::out_of_range("realPos exceeds bitStore size");
+        }
+        int byteIndex = realPos / 16;
+        int bitOffset = realPos % 16;
+        uint64_t value = 0;
+        for (int i = 0; i < divider; i++) {
+            value |= ((subarray[byteIndex] >> (15 - bitOffset)) & 1) << (divider - 1 - i);
+            bitOffset++;
+            if (bitOffset == 16) {
+                bitOffset = 0;
+                byteIndex++;
+            }
+        }
+        return static_cast<int>(value);
+    } else if (bitSize == 32) {
+        uint32_t* subarray = static_cast<uint32_t*>(newRules[rule]);
+        int totalBits = innerLength * 32;
+        if (realPos + divider > totalBits) {
+            throw std::out_of_range("realPos exceeds bitStore size");
+        }
+        int byteIndex = realPos / 32;
+        int bitOffset = realPos % 32;
+        uint64_t value = 0;
+        for (int i = 0; i < divider; i++) {
+            value |= ((subarray[byteIndex] >> (31 - bitOffset)) & 1) << (divider - 1 - i);
+            bitOffset++;
+            if (bitOffset == 32) {
+                bitOffset = 0;
+                byteIndex++;
+            }
+        }
+        return static_cast<int>(value);
+    } else {
+        uint64_t* subarray = static_cast<uint64_t*>(newRules[rule]);
+        int totalBits = innerLength * 64;
+        if (realPos + divider > totalBits) {
+            throw std::out_of_range("realPos exceeds bitStore size");
+        }
+        int byteIndex = realPos / 64;
+        int bitOffset = realPos % 64;
+        uint64_t value = 0;
+        for (int i = 0; i < divider; i++) {
+            value |= ((subarray[byteIndex] >> (63 - bitOffset)) & 1) << (divider - 1 - i);
+            bitOffset++;
+            if (bitOffset == 64) {
+                bitOffset = 0;
+                byteIndex++;
+            }
+        }
+        return static_cast<int>(value);
+    }
+}
+
+// calculates needed bitsize
+int CFG::typeSize(int bits) {
+    if (bits <= 8) {
+        return 8;
+    } else if (bits <= 16) {
+        return 16;
+    } else if (bits <= 32) {
+        return 32;
+    } else {
+        return 64;
+    }
+}
+
+// creates the respective bittype array
+void* CFG::createArray(int type, int size) {
+    switch (type) {
+        case 8:
+            return new uint8_t[size];
+        case 16:
+            return new uint16_t[size];
+        case 32:
+            return new uint32_t[size];
+        case 64:
+            return new uint64_t[size];
+    }
+}
+
+// finds the most significant bit
+int CFG::MSB(int num) {
+    int msbPos = 0;
+    while (num != 0) {
+        num >>= 1;
+        msbPos++;
+    }
+    return msbPos;
+}
+
+// both of these unused in this implementation
+//std::string CFG::storeMSBnumber(int num) {
+//
+//    std::string binary = std::bitset<64>(num).to_string();
+//    binary.erase(0, binary.find_first_not_of('0'));
+//
+//    return binary;
+//}
+//
+//int CFG::MSBarr(const std::vector<int>& arr) {
+//    int msb = 0;
+//    for (int ele : arr) {
+//        msb = std::max(msb, MSB(ele));
+//    }
+//    return msb;
+//}
 
 void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule)
 {
@@ -40,6 +193,8 @@ void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule
 
 void CFG::reorderRules(uint64_t* ruleSizes)
 {
+    ruleLengths = new int[startRule+1];
+    innerLengths = new int[startRule+1];
     // count how many times each expansion length occurs
     std::map<uint64_t, int> sizeMap;
     uint64_t size;
@@ -54,12 +209,20 @@ void CFG::reorderRules(uint64_t* ruleSizes)
     // compute the last occurrence of each expansion length in the new ordering
     int offset = CFG::ALPHABET_SIZE - 1;
     int nextOffset = offset;
+
+    // start by iterating over key/value pairs in sizeMap (so expansion length and respective count)
     for (auto& [size, count] : sizeMap) {
+        // so if count is 2, we'll add 2 to nextOffset where the next rule size resides
         nextOffset += count;
+        // make count the place where the last occurrence of the size resides
         count += offset;
+        // prepare for next iteration
         offset = nextOffset;
     }
 
+    // assign new rule characters using the last occurrences
+    // newOrdering will store new indexes for each rule
+    //void* newOrdering = new uint64_t [startRule + 1];
     // assign new rule characters using the last occurrences
     int* newOrdering = new int[startRule + 1];
     for (int i = CFG::ALPHABET_SIZE; i < startRule; i++) {
@@ -69,35 +232,144 @@ void CFG::reorderRules(uint64_t* ruleSizes)
     newOrdering[startRule] = startRule;
 
     // reorder the rules and update characters
-    int** newRules = new int*[startRule + 1];
-    int c, newIndex;
+    int** newRules2 = new int*[startRule + 1];
+    int c2, newIndex2;
     for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
-        for (int j = 0; (c = rules[i][j]) != CFG::DUMMY_CODE; j++) {
-            if (c < CFG::ALPHABET_SIZE) {
-                rules[i][j] = c;
+        for (int j = 0; (c2 = rules[i][j]) != CFG::DUMMY_CODE; j++) {
+            if (c2 < CFG::ALPHABET_SIZE) {
+                rules[i][j] = c2;
             } else {
-                rules[i][j] = newOrdering[c];
+                rules[i][j] = newOrdering[c2];
             }
         }
-        newIndex = newOrdering[i];
-        newRules[newIndex] = rules[i];
+        newIndex2 = newOrdering[i];
+        newRules2[newIndex2] = rules[i];
     }
     delete[] rules;
-    rules = newRules;
+    rules = newRules2;
 
-    // clean up
+    int c;
+    newRules = new void*[startRule + 1];
+
+    //iterate through every lhs rule
+    for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
+
+        //count number of rhs rules for each lhs
+        int ruleLength = 0;
+        while (rules[i][ruleLength] != CFG::DUMMY_CODE) {
+            ruleLength++;
+        }
+        //note, this does not include dummycode, as dummycodes are excluded from the bitpack
+        ruleLengths[i] = ruleLength;
+
+        int lhsMSB = MSB(i - 1); //most significant bit from i - 1 (ex 9 for 256 (100000000); -1 would give 8 for 255 (011111111)
+        int bitSize = typeSize(lhsMSB); //smallest array size needed to store i (ex 16 bit array for 9 msb or 8 for 6, etc)
+        if (bitSize == 8) {
+            newRules[i] = new uint8_t[ruleLength];
+        } else if (bitSize == 16) {
+            newRules[i] = new uint16_t[ruleLength];
+        } else if (bitSize == 32) {
+            newRules[i] = new uint32_t[ruleLength];
+        } else {
+            newRules[i] = new uint64_t[ruleLength];
+        }
+        std::string finalBits; //for some bitshift testing purposes
+
+        //this saves only the needed bits from each rhs value (001110 -> 1110) and combines all rhs values into a string for bitpacking
+        for (int j = 0; j < ruleLength; j++) {
+
+            c = rules[i][j];
+            if (bitSize == 8) {
+                uint8_t value = static_cast<uint8_t>(c);
+                std::string bitString = std::bitset<8>(value).to_string();
+                bitString.erase(0, 8-lhsMSB);
+                //not used currently, but was for messing around with RHS MSB stuff, fills out 0's to correct size
+                if (finalBits.length()+1 < lhsMSB && finalBits.length() != 0) {
+                    finalBits.insert(0, lhsMSB-finalBits.length()+1, '0');
+                }
+                finalBits = finalBits + bitString;
+            } else if (bitSize == 16) {
+                uint16_t value = static_cast<uint16_t>(c);
+                std::string bitString = std::bitset<16>(value).to_string();
+                bitString.erase(0, 16-lhsMSB);
+                if (finalBits.length()+1 < lhsMSB && finalBits.length() != 0) {
+                    finalBits.insert(0, lhsMSB-finalBits.length()+1, '0');
+                }
+                finalBits = finalBits + bitString;
+            } else if (bitSize == 32) {
+                uint32_t value = static_cast<uint32_t>(c);
+                std::string bitString = std::bitset<32>(value).to_string();
+                bitString.erase(0, 32-lhsMSB);
+                if (finalBits.length()+1 < lhsMSB && finalBits.length() != 0) {
+                    finalBits.insert(0, lhsMSB-finalBits.length()+1, '0');
+                }
+                finalBits = finalBits + bitString;
+            } else if (bitSize == 64) {
+                uint64_t value = static_cast<uint64_t>(c);
+                std::string bitString = std::bitset<64>(value).to_string();
+                bitString.erase(0, 64-lhsMSB);
+                if (finalBits.length()+1 < lhsMSB && finalBits.length() != 0) {
+                    finalBits.insert(0, lhsMSB-finalBits.length()+1, '0');
+                }
+                finalBits = finalBits + bitString;
+            }
+        }
+
+        //this calculates the smallest inner-array size required
+        int sizeInnerArray;
+        int sizeRemainder = finalBits.length() % bitSize;
+        if (sizeRemainder != 0) {
+            //fill out the last array if there aren't enough bits
+            for (int r = 0; r < bitSize-sizeRemainder; r++) {
+                finalBits.push_back('0');
+            }
+            sizeInnerArray = finalBits.length() / bitSize;
+        } else {
+            //get the exact number of elements needed for the inner array
+            sizeInnerArray = finalBits.length() / bitSize;
+        }
+        innerLengths[i] = sizeInnerArray;
+//        if (i == startRule) {
+//            std::cout << "finalBits.length(): " << finalBits.length() << ", InnerArraySize: " << sizeInnerArray << std::endl;
+//            std::cout << "bitSize: " << bitSize << ", sizeRemainder: " << sizeRemainder << std::endl;
+//        }
+        //creates the correct inner array size/type at newRules[i]
+        newRules[i] = createArray(bitSize, sizeInnerArray);
+
+        std::vector<std::string> finalBitsParts;
+        //this gets correct segments and stuffs them in the array. Could be much faster without strings, but not as important since the pack doesn't change
+        for (int p = 0; p < sizeInnerArray; p++) {
+            std::string finalBitsSegments = finalBits.substr(p*bitSize, bitSize);
+            uint64_t segmentStorage = std::bitset<64>(finalBitsSegments).to_ullong();
+
+            if (bitSize == 8) {
+                static_cast<uint8_t*>(newRules[i])[p] = static_cast<uint8_t>(segmentStorage);
+            } else if (bitSize == 16) {
+                static_cast<uint16_t*>(newRules[i])[p] = static_cast<uint16_t>(segmentStorage);
+            } else if (bitSize == 32) {
+                static_cast<uint32_t*>(newRules[i])[p] = static_cast<uint32_t>(segmentStorage);
+            } else {
+                static_cast<uint64_t *>(newRules[i])[p] = static_cast<uint64_t>(segmentStorage);
+            }
+        }
+    }
+
     delete[] newOrdering;
 }
 
 void CFG::postProcess()
 {
     // prepare post-processing structures
+    // uint array of startrule size, for test example ~ 2072 bytes of memory (259 * 8)
     uint64_t* ruleSizes = new uint64_t[startRule + 1];
+    // int array of startrule size (each element 64 bit uint)
     int* ruleDepths = new int[startRule + 1];
+    // intializing every element (up to 256) in ruleSizes and ruleDepths arrays to 1
     for (int i = 0; i < CFG::ALPHABET_SIZE; i++) {
         ruleSizes[i] = 1;
         ruleDepths[i] = 1;
     }
+    //sets values past 256 (rules and startrule) to 0
     for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
         ruleSizes[i] = 0;
         ruleDepths[i] = 0;

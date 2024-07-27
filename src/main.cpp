@@ -110,6 +110,10 @@ int main(int argc, char* argv[])
       double durationSD = 0;
       for (int j = 0; j < numQueries; j++) {
           //begin = distr(gen);
+=======
+          uint64_t tester = cfg->getTextLength();
+          uint64_t tester2 = querySize;
+          uint64_t tester3 = dist(eng);
           begin = (cfg->getTextLength() - querySize) * dist(eng);
           //std::cerr << begin << std::endl;
           end = begin + querySize - 1;

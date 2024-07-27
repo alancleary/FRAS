@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cpp/cmake-build-debug/_deps/sdsl-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cpp/cmake-build-debug/_deps/sdsl-src/external/cereal" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cpp/cmake-build-debug/_deps/sdsl-src/external/googletest" vcs="Git" />
-  </component>
-</project>

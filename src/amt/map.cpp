@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <bit>
+#include <stdexcept>
 #include "amt/bitops.hpp"
 #include "amt/key.hpp"
 #include "amt/map.hpp"

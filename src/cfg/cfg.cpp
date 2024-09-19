@@ -1,34 +1,22 @@
 #include <algorithm>
-#include <cstdio>  // FILE
+#include <cstdio>
 #include <fstream>
 #include <map>
 #include <sys/stat.h>
 #include "cfg/cfg.hpp"
+#include "cfg/jagged_array_int.hpp"
 
 namespace cfg {
 
-// construction
-
-CFG::CFG() { }
-
-// destruction
-
-CFG::~CFG()
-{
-    for (int i = CFG::ALPHABET_SIZE; i < startRule + 1; i++) {
-        delete[] rules[i];
-    }
-    delete[] rules;
-}
-
 // private
 
-void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule)
+template <class JaggedArray_T>
+void CFG<JaggedArray_T>::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule)
 {
     if (ruleSizes[rule] != 0) return;
 
     int c;
-    for (int i = 0; (c = rules[rule][i]) != CFG::DUMMY_CODE; i++) {
+    for (int i = 0; (c = get(rule, i)) != CFG::DUMMY_CODE; i++) {
         if (ruleSizes[c] == 0) {
             computeDepthAndTextSize(ruleSizes, ruleDepths, c);
         }
@@ -38,7 +26,8 @@ void CFG::computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule
     ruleDepths[rule]++;
 }
 
-void CFG::reorderRules(uint64_t* ruleSizes)
+template <class JaggedArray_T>
+void CFG<JaggedArray_T>::reorderRules(uint64_t* ruleSizes)
 {
     // count how many times each expansion length occurs
     std::map<uint64_t, int> sizeMap;
@@ -69,27 +58,34 @@ void CFG::reorderRules(uint64_t* ruleSizes)
     newOrdering[startRule] = startRule;
 
     // reorder the rules and update characters
-    int** newRules = new int*[startRule + 1];
+    JaggedArray_T* newRules = new JaggedArray_T(startRule + 1);
+    int* ruleBuffer = new int[startSize + 1];  // +1 for the dummy code
     int c, newIndex;
     for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
-        for (int j = 0; (c = rules[i][j]) != CFG::DUMMY_CODE; j++) {
+        int j = 0;
+        do {
+            c = this->get(i, j);
             if (c < CFG::ALPHABET_SIZE) {
-                rules[i][j] = c;
+                ruleBuffer[j] = c;
             } else {
-                rules[i][j] = newOrdering[c];
+                ruleBuffer[j] = newOrdering[c];
             }
-        }
+            j += 1;
+        } while (c != CFG::DUMMY_CODE);
         newIndex = newOrdering[i];
-        newRules[newIndex] = rules[i];
+        setRule(newRules, newIndex, ruleBuffer, j);
+        clearRule(rules, i);
     }
-    delete[] rules;
+    delete rules;
     rules = newRules;
 
     // clean up
+    delete[] ruleBuffer;
     delete[] newOrdering;
 }
 
-void CFG::postProcess()
+template <class JaggedArray_T>
+void CFG<JaggedArray_T>::postProcess()
 {
     // prepare post-processing structures
     uint64_t* ruleSizes = new uint64_t[startRule + 1];
@@ -111,7 +107,7 @@ void CFG::postProcess()
     // clean up depths
     delete[] ruleDepths;
 
-    // order the rules by expansion length; shortest to longest
+    // order the rules by expansion length, shortest to longest
     reorderRules(ruleSizes);
 
     // clean up rule sizes
@@ -120,44 +116,40 @@ void CFG::postProcess()
 
 // load grammars
 
-CFG* CFG::fromMrRepairFile(std::string filename)
+template <class JaggedArray_T>
+CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromMrRepairFile(std::string filename)
 {
-    CFG* cfg = new CFG();
-
     std::ifstream reader(filename);
     std::string line;
 
     // read grammar specs
     std::getline(reader, line);
-    cfg->textLength = std::stoi(line);
+    int textLength = std::stoi(line);
     std::getline(reader, line);
-    cfg->numRules = std::stoi(line);
+    int numRules = std::stoi(line);
     std::getline(reader, line);
-    cfg->startSize = std::stoi(line);
+    int startSize = std::stoi(line);
 
     // prepare to read grammar
-    cfg->startRule = cfg->numRules + CFG::ALPHABET_SIZE;
-    cfg->rules = new int*[cfg->startRule + 1];  // +1 for start rule
-    cfg->rules[cfg->startRule] = new int[cfg->startSize + 1];  // +1 for the dummy code
+    CFG* cfg = new CFG<JaggedArray_T>(numRules);
+    cfg->textLength = std::stoi(line);
+    cfg->startSize = std::stoi(line);
+
+    // assume the start rule is the largest to create a rule buffer
+    int* ruleBuffer = new int[cfg->startSize + 1];  // +1 for the dummy code
     int j, c, ruleLength;
 
     // read rules in the order they were added to grammar, i.e. line-by-line
     for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
-        for (j = 0; ;j++) {
+        int j = 0;
+        do {
             std::getline(reader, line);
             c = std::stoi(line);
-            // use start rule as a buffer
-            cfg->rules[cfg->startRule][j] = c;
-            if (c == CFG::DUMMY_CODE) {
-                break;
-            }
-        }
-        ruleLength = j;
-        cfg->rulesSize += ruleLength;
-        cfg->rules[i] = new int[ruleLength + 1];
-        for (j = 0; j <= ruleLength; j++) {
-            cfg->rules[i][j] = cfg->rules[cfg->startRule][j];
-        }
+            ruleBuffer[j] = c;
+            j++;
+        } while (c != CFG::DUMMY_CODE);
+        cfg->rulesSize += j;
+        cfg->setRule(i, ruleBuffer, j);
     }
 
     // read start rule
@@ -165,23 +157,26 @@ CFG* CFG::fromMrRepairFile(std::string filename)
         // get the (non-)terminal character
         std::getline(reader, line);
         c = std::stoi(line);
-        cfg->rules[cfg->startRule][i] = c;
+        ruleBuffer[i] = c;
     }
-    cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
+    ruleBuffer[cfg->startSize] = CFG::DUMMY_CODE;
+    cfg->setRule(cfg->startRule, ruleBuffer, cfg->startSize + 1);
 
     // compute grammar depth and text length
     cfg->postProcess();
+
+    // cleanup
+    delete[] ruleBuffer;
 
     return cfg;
 }
 
 // construction from Navarro grammar
 
-CFG* CFG::fromNavarroFiles(std::string filenameC, std::string filenameR)
+template <class JaggedArray_T>
+CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromNavarroFiles(std::string filenameC, std::string filenameR)
 {
     typedef struct { int left, right; } Tpair;
-
-    CFG* cfg = new CFG();
 
     // get the .R file size
     struct stat s;
@@ -194,36 +189,36 @@ CFG* CFG::fromNavarroFiles(std::string filenameC, std::string filenameR)
     // read the alphabet size
     int alphabetSize;
     fread(&alphabetSize, sizeof(int), 1, rFile);
-    cfg->numRules = (len - sizeof(int) - alphabetSize) / sizeof(Tpair);
-    cfg->rulesSize = cfg->numRules * 2;  // each rule is a pair
-    cfg->startRule = cfg->numRules + CFG::ALPHABET_SIZE;
+    int numRules = (len - sizeof(int) - alphabetSize) / sizeof(Tpair);
+    CFG* cfg = new CFG<JaggedArray_T>(numRules);
+    cfg->rulesSize = numRules * 2;  // each rule is a pair
 
     // read the alphabet map, i.e. \Sigma -> [0..255]
     char map[256];
     fread(&map, sizeof(char), alphabetSize, rFile);
 
     // prepare to read grammar
-    cfg->rules = new int*[cfg->startRule + 1];  // +1 for start rule
+    int* ruleBuffer = new int[3];  // +1 for the dummy code
 
     // read the rule pairs
     Tpair p;
     int c;
     for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         fread(&p, sizeof(Tpair), 1, rFile);
-        cfg->rules[i] = new int[3];  // +1 for the dummy code
         if (p.left < alphabetSize) {
             c = (unsigned char) map[p.left];
         } else {
             c = p.left - alphabetSize + CFG::ALPHABET_SIZE;
         }
-        cfg->rules[i][0] = c;
+        ruleBuffer[0] = c;
         if (p.right < alphabetSize) {
             c = (unsigned char) map[p.right];
         } else {
             c = p.right - alphabetSize + CFG::ALPHABET_SIZE;
         }
-        cfg->rules[i][1] = c;
-        cfg->rules[i][2] = CFG::DUMMY_CODE;
+        ruleBuffer[1] = c;
+        ruleBuffer[2] = CFG::DUMMY_CODE;
+        cfg->setRule(i, ruleBuffer, 3);
     }
 
     // close the .R file
@@ -232,7 +227,9 @@ CFG* CFG::fromNavarroFiles(std::string filenameC, std::string filenameR)
     // get the .C file size
     stat(filenameC.c_str(), &s);
     cfg->startSize = s.st_size / sizeof(int);
-    cfg->rules[cfg->startRule] = new int[cfg->startSize + 1];  // +1 for the dummy code
+    // resize the buffer
+    delete[] ruleBuffer;
+    ruleBuffer = new int[cfg->startSize + 1];  // +1 for the dummy code
 
     // open the .C file
     FILE* cFile = fopen(filenameC.c_str(), "r");
@@ -246,23 +243,26 @@ CFG* CFG::fromNavarroFiles(std::string filenameC, std::string filenameR)
         } else {
             c = t - alphabetSize + CFG::ALPHABET_SIZE;
         }
-        cfg->rules[cfg->startRule][i] = c;
+        ruleBuffer[i] = c;
     }
-    cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
+    ruleBuffer[cfg->startSize] = CFG::DUMMY_CODE;
+    cfg->setRule(cfg->startRule, ruleBuffer, cfg->startSize + 1);
 
     // compute grammar depth and text length
     cfg->postProcess();
+
+    // cleanup
+    delete[] ruleBuffer;
 
     return cfg;
 }
 
 // construction from BigRePair grammar
 
-CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
+template <class JaggedArray_T>
+CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromBigRepairFiles(std::string filenameC, std::string filenameR)
 {
     typedef struct { unsigned int left, right; } Tpair;
-
-    CFG* cfg = new CFG();
 
     // get the .R file size
     struct stat s;
@@ -275,32 +275,33 @@ CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
     // read the alphabet size
     int alphabetSize;
     fread(&alphabetSize, sizeof(int), 1, rFile);  // NOTE: alphabetSize is always 256
-    cfg->numRules = (len - sizeof(int)) / sizeof(Tpair);
+    int numRules = (len - sizeof(int)) / sizeof(Tpair);
+    CFG* cfg = new CFG<JaggedArray_T>(numRules);
     cfg->rulesSize = cfg->numRules * 2;  // each rule is a pair
     cfg->startRule = cfg->numRules + CFG::ALPHABET_SIZE;
 
     // prepare to read grammar
-    cfg->rules = new int*[cfg->startRule + 1];  // +1 for start rule
+    int* ruleBuffer = new int[cfg->startRule + 1];  // +1 for start rule
 
     // read the rule pairs
     Tpair p;
     int c;
     for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         fread(&p, sizeof(Tpair), 1, rFile);
-        cfg->rules[i] = new int[3];  // +1 for the dummy code
         if (p.left < alphabetSize) {
             c = (unsigned char) p.left;
         } else {
             c = p.left;  // already offset by alphabetSize
         }
-        cfg->rules[i][0] = c;
+        ruleBuffer[0] = c;
         if (p.right < alphabetSize) {
             c = (unsigned char) p.right;
         } else {
             c = p.right;  // already offset by alphabetSize
         }
-        cfg->rules[i][1] = c;
-        cfg->rules[i][2] = CFG::DUMMY_CODE;
+        ruleBuffer[1] = c;
+        ruleBuffer[2] = CFG::DUMMY_CODE;
+        cfg->setRule(i, ruleBuffer, 3);
     }
 
     // close the .R file
@@ -309,7 +310,6 @@ CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
     // get the .C file size
     stat(filenameC.c_str(), &s);
     cfg->startSize = s.st_size / sizeof(unsigned int);
-    cfg->rules[cfg->startRule] = new int[cfg->startSize + 1];  // +1 for the dummy code
 
     // open the .C file
     FILE* cFile = fopen(filenameC.c_str(), "r");
@@ -324,14 +324,21 @@ CFG* CFG::fromBigRepairFiles(std::string filenameC, std::string filenameR)
         } else {
             c = t;  // already offset by alphabetSize
         }
-        cfg->rules[cfg->startRule][i] = c;
+        ruleBuffer[i] = c;
     }
-    cfg->rules[cfg->startRule][cfg->startSize] = CFG::DUMMY_CODE;
+    ruleBuffer[cfg->startSize] = CFG::DUMMY_CODE;
+    cfg->setRule(cfg->startRule, ruleBuffer, cfg->startSize + 1);
 
     // compute grammar depth and text length
     cfg->postProcess();
 
+    // cleanup
+    delete[] ruleBuffer;
+
     return cfg;
 }
+
+// instantiate the class
+template class CFG<JaggedArrayInt>;
 
 }

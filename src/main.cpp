@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "cfg/cfg.hpp"
+#include "cfg/jagged_array_int.hpp"
 //#include "cfg/random_access_amt.hpp"
 //#include "cfg/random_access_bv.hpp"
 //#include "cfg/random_access_v2_bv.hpp"
@@ -26,13 +27,14 @@ void usage(int argc, char* argv[]) {
     cerr << "\tseed: the seed to use with the pseudo-random number generator" << endl;
 }
 
-CFG* loadGrammar(string type, string filename) {
+template <class JaggedArray_T>
+CFG<JaggedArray_T>* loadGrammar(string type, string filename) {
     if (type == "mrrepair") {
-        return CFG::fromMrRepairFile(filename + ".out");
+        return CFG<JaggedArray_T>::fromMrRepairFile(filename + ".out");
     } else if (type == "navarro") {
-        return CFG::fromNavarroFiles(filename + ".C", filename + ".R");
+        return CFG<JaggedArray_T>::fromNavarroFiles(filename + ".C", filename + ".R");
     } else if (type == "bigrepair") {
-        return CFG::fromBigRepairFiles(filename + ".C", filename + ".R");
+        return CFG<JaggedArray_T>::fromBigRepairFiles(filename + ".C", filename + ".R");
     }
     cerr << "invalid grammar type: \"" << type << "\"" << endl;
     cerr << endl;
@@ -66,19 +68,20 @@ int main(int argc, char* argv[])
     std::uniform_real_distribution<> dist(0.0, 1.0);
 
     // load the grammar
+    std::cerr << "loading grammar..." << std::endl;
     string type = argv[1];
     string filename = argv[2];
-    CFG* cfg = loadGrammar(type, filename);
+    CFG<JaggedArrayInt>* cfg = loadGrammar<JaggedArrayInt>(type, filename);
 
     // print grammar stats
-    cerr << "text length: " << cfg->getTextLength() << endl;
-    cerr << "num rules: " << cfg->getNumRules() << endl;
-    cerr << "start size: " << cfg->getStartSize() << endl;
-    cerr << "rules size: " << cfg->getRulesSize() << endl;
-    cerr << "total size: " << cfg->getTotalSize() << endl;
-    cerr << "depth: " << cfg->getDepth() << endl;
+    cerr << "\ttext length: " << cfg->getTextLength() << endl;
+    cerr << "\tnum rules: " << cfg->getNumRules() << endl;
+    cerr << "\tstart size: " << cfg->getStartSize() << endl;
+    cerr << "\trules size: " << cfg->getRulesSize() << endl;
+    cerr << "\ttotal size: " << cfg->getTotalSize() << endl;
+    cerr << "\tdepth: " << cfg->getDepth() << endl;
     uint64_t cfgMemSize = cfg->memSize();
-    cerr << "mem size: " << cfgMemSize << endl;
+    cerr << "\tmem size: " << cfgMemSize << endl;
 
     // instantiate indexes
     //RandomAccessAMT amt(cfg);
@@ -86,14 +89,15 @@ int main(int argc, char* argv[])
     //RandomAccessV2BV<sdsl::bit_vector, sdsl::rank_support_v5<>, sdsl::select_support_mcl<>> bv2(cfg);
     RandomAccessV2SD sd(cfg);
     uint64_t sdMemSize = sd.memSize();
-    cerr << "sdv2 mem size: " << sdMemSize << endl;
+    cerr << "\tsdv2 mem size: " << sdMemSize << endl;
 
-    cerr << "total mem size: " << cfgMemSize + sdMemSize << endl;
+    cerr << "\ttotal mem size: " << cfgMemSize + sdMemSize << endl;
     
     // generate the original text
     //cfg->get(cout, 0, cfg->getTextLength() - 1);
 
     // benchmarks
+    std::cerr << "running benchmarks..." << std::endl;
     chrono::steady_clock::time_point startTime, endTime;
     //uint64_t durationAMT = 0;
     //uint64_t durationBV = 0;

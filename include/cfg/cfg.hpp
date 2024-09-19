@@ -1,50 +1,53 @@
 #ifndef INCLUDED_CFG_CFG
 #define INCLUDED_CFG_CFG
 
+#include <cstdint>
 #include <string>
-//#include "cfg/random_access.hpp"
 
 namespace cfg {
 
-/** Forward declare RandomAccess. */
-//class RandomAccess;
-
 /** Parses different grammar-compressed CFGs into a naive encoding. */
+template <class JaggedArray_T>
 class CFG
 {
 
-//private:
-
-// TODO: fix friend relationship and make these members private
-public:
-    static const int ALPHABET_SIZE = 256;
-
-    static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
+private:
 
     uint64_t textLength = 0;
-    int numRules = 0;
+    JaggedArray_T* rules;
+    int numRules;
     int rulesSize = 0;
-    int** rules;
     int startRule;
     int startSize = 0;
     int depth = 0;
 
-private:
+    void setRule(JaggedArray_T* rules, int rule, int* characters, int length)
+    {
+        rules->setArray(rule, characters, length);
+    }
+    void setRule(int rule, int* characters, int length)
+    {
+        setRule(this->rules, rule, characters, length);
+    }
+
+    void clearRule(JaggedArray_T* rules, int rule)
+    {
+        rules->clearArray(rule);
+    }
+    void setRule(int rule)
+    {
+        clearRule(this->rules, rule);
+    }
+
     void computeDepthAndTextSize(uint64_t* ruleSizes, int* ruleDepths, int rule);
-
     void reorderRules(uint64_t* ruleSizes);
-
     void postProcess();
 
 public:
 
-    uint64_t memSize()
-    {
-        return sizeof(int) * (startSize + rulesSize);
-    }
+    static const int ALPHABET_SIZE = 256;
 
-    CFG();
-    ~CFG();
+    static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
 
     /**
      * Loads an MR-Repair grammar from a file.
@@ -75,14 +78,24 @@ public:
      */
     static CFG* fromBigRepairFiles(std::string filenameC, std::string filenameR);
 
-    uint64_t getTextLength() const { return textLength; }
-    int getNumRules() const { return numRules; }
-    int getRulesSize() const { return rulesSize; }
-    int getStartSize() const { return startSize; }
-    int getTotalSize() const { return startSize + rulesSize; }
-    int getDepth() const { return depth; }
+    CFG(int numRules): numRules(numRules), startRule(numRules + CFG::ALPHABET_SIZE)
+    {
+        rules = new JaggedArray_T(numRules + CFG::ALPHABET_SIZE + 1);
+    }
+    ~CFG() { delete rules; };
 
-    //friend class RandomAccess;
+    int get(std::size_t i, std::size_t j) { return rules->getValue(i, j); }
+
+    const uint64_t& getTextLength() const { return textLength; }
+    const int& getNumRules() const { return numRules; }
+    const int& getRulesSize() const { return rulesSize; }
+    const int& getStartRule() const { return startRule; }
+    const int& getStartSize() const { return startSize; }
+    const int getTotalSize() const { return startSize + rulesSize; }
+    const int& getDepth() const { return depth; }
+
+    const uint64_t memSize() const { return sizeof(int) * (startSize + rulesSize); }
+
 };
 
 }

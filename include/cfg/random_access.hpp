@@ -1,12 +1,13 @@
 #ifndef INCLUDED_CFG_RANDOM_ACCESS
 #define INCLUDED_CFG_RANDOM_ACCESS
 
+#include <cstdint>
 #include <ostream>
-#include "cfg/cfg.hpp"
 
 namespace cfg {
 
 /** An abstract class that adds random access support to a CFG. */
+template <class CFG_T>
 class RandomAccess
 {
     private:
@@ -15,11 +16,11 @@ class RandomAccess
 
     protected:
 
-        CFG* cfg;
+        CFG_T* cfg;
 
     public:
 
-        RandomAccess(CFG* cfg): cfg(cfg) { };
+        RandomAccess(CFG_T* cfg): cfg(cfg) { };
 
         /**
           * Gets a substring in the original string.
@@ -30,6 +31,7 @@ class RandomAccess
           * @throws Exception if begin or end is out of bounds.
           */
         void get(std::ostream& out, uint64_t begin, uint64_t end);
+
 };
 
 }

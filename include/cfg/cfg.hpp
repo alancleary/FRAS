@@ -47,7 +47,7 @@ public:
 
     static const int ALPHABET_SIZE = 256;
 
-    static const int DUMMY_CODE = -1;  // UINT_MAX in MR-RePair C code
+    static const int DUMMY_CODE = 0;
 
     /**
      * Loads an MR-Repair grammar from a file.
@@ -94,7 +94,7 @@ public:
     const int getTotalSize() const { return startSize + rulesSize; }
     const int& getDepth() const { return depth; }
 
-    const uint64_t memSize() const { return sizeof(int) * (startSize + rulesSize); }
+    int memSize() { return rules->getMemSize(); }
 
 };
 

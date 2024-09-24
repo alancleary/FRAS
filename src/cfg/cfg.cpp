@@ -4,6 +4,7 @@
 #include <map>
 #include <sys/stat.h>
 #include "cfg/cfg.hpp"
+#include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_int.hpp"
 
 namespace cfg {
@@ -142,12 +143,13 @@ CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromMrRepairFile(std::string filename)
     // read rules in the order they were added to grammar, i.e. line-by-line
     for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
         int j = 0;
-        do {
+        std::getline(reader, line);
+        c = std::stoi(line);
+        while ((c = std::stoi(line)) != -1) {
+            ruleBuffer[j++] = c;
             std::getline(reader, line);
-            c = std::stoi(line);
-            ruleBuffer[j] = c;
-            j++;
-        } while (c != CFG::DUMMY_CODE);
+        }
+        ruleBuffer[j++] = CFG::DUMMY_CODE;
         cfg->rulesSize += j;
         cfg->setRule(i, ruleBuffer, j);
     }
@@ -339,6 +341,7 @@ CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromBigRepairFiles(std::string filenameC
 }
 
 // instantiate the class
+template class CFG<JaggedArrayBpIndex>;
 template class CFG<JaggedArrayInt>;
 
 }

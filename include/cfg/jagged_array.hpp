@@ -9,7 +9,6 @@ class JaggedArray
   protected:
 
     int numArrays;
-    int memSize = 0;
 
   public:
 
@@ -20,7 +19,7 @@ class JaggedArray
     virtual int getValue(int index, int item) = 0;
 
     const int& getNumArrays() const { return numArrays; }
-    const int& getMemSize() const { return memSize; }
+    virtual int getMemSize() = 0;
 };
 
 }

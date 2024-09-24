@@ -35,11 +35,24 @@ class JaggedArrayInt : public JaggedArray
       delete[] arrays;
     }
 
+    int getMemSize() {
+      int memSize = 0;
+      for (int i = 0; i < numArrays; i++) {
+        int* array = arrays[i];
+        if (array == NULL) continue;
+        int j = 0;
+        while (true) {
+          uint8_t value = array[j++];
+          if (value == 0) break;
+        }
+        memSize += sizeof(int) * j;
+      }
+      return memSize;
+    }
+
     void setArray(int index, int* array, int length)
     {
-      memSize -= malloc_usable_size(arrays[index]);
       arrays[index] = (int*) realloc(arrays[index], sizeof(int) * length);
-      memSize += malloc_usable_size(arrays[index]);
       if (arrays[index] == NULL) {
         throw std::bad_alloc();
       }

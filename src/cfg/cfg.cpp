@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include "cfg/cfg.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
+#include "cfg/jagged_array_bp_mono.hpp"
 #include "cfg/jagged_array_int.hpp"
 
 namespace cfg {
@@ -52,20 +53,25 @@ void CFG<JaggedArray_T>::reorderRules(uint64_t* ruleSizes)
 
     // assign new rule characters using the last occurrences
     int* newOrdering = new int[startRule + 1];
+    int* newOrderingReversed = new int[startRule + 1];
     for (int i = CFG::ALPHABET_SIZE; i < startRule; i++) {
         size = ruleSizes[i];
         newOrdering[i] = sizeMap[size]--;
+        newOrderingReversed[newOrdering[i]] = i;
     }
     newOrdering[startRule] = startRule;
+    newOrderingReversed[startRule] = startRule;
 
     // reorder the rules and update characters
+    // NOTE: assigning rules in order is required by some jagged arrays
     JaggedArray_T* newRules = new JaggedArray_T(startRule + 1);
     int* ruleBuffer = new int[startSize + 1];  // +1 for the dummy code
     int c, newIndex;
     for (int i = CFG::ALPHABET_SIZE; i <= startRule; i++) {
+        int oldIndex = newOrderingReversed[i];
         int j = 0;
         do {
-            c = this->get(i, j);
+            c = this->get(oldIndex, j);
             if (c < CFG::ALPHABET_SIZE) {
                 ruleBuffer[j] = c;
             } else {
@@ -73,9 +79,8 @@ void CFG<JaggedArray_T>::reorderRules(uint64_t* ruleSizes)
             }
             j += 1;
         } while (c != CFG::DUMMY_CODE);
-        newIndex = newOrdering[i];
-        setRule(newRules, newIndex, ruleBuffer, j);
-        clearRule(rules, i);
+        setRule(newRules, i, ruleBuffer, j);
+        clearRule(rules, oldIndex);
     }
     delete rules;
     rules = newRules;
@@ -83,6 +88,7 @@ void CFG<JaggedArray_T>::reorderRules(uint64_t* ruleSizes)
     // clean up
     delete[] ruleBuffer;
     delete[] newOrdering;
+    delete[] newOrderingReversed;
 }
 
 template <class JaggedArray_T>
@@ -342,6 +348,7 @@ CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromBigRepairFiles(std::string filenameC
 
 // instantiate the class
 template class CFG<JaggedArrayBpIndex>;
+template class CFG<JaggedArrayBpMono>;
 template class CFG<JaggedArrayInt>;
 
 }

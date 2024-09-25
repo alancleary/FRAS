@@ -3,6 +3,7 @@
 
 #include "cfg/random_access_v2.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
+#include "cfg/jagged_array_bp_mono.hpp"
 #include "cfg/jagged_array_int.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/util.hpp>
@@ -148,8 +149,9 @@ public:
 };
 
 // instantiate the class
-template class RandomAccessV2SD<CFG<JaggedArrayInt>>;
 template class RandomAccessV2SD<CFG<JaggedArrayBpIndex>>;
+template class RandomAccessV2SD<CFG<JaggedArrayBpMono>>;
+template class RandomAccessV2SD<CFG<JaggedArrayInt>>;
 
 }
 

@@ -14,7 +14,16 @@ class JaggedArrayBp : public JaggedArray
   protected:
 
     const std::size_t size = sizeof(uint8_t) * 8;
+    const std::size_t intSizeBits = sizeof(int) * 8;
+
     uint8_t** arrays;
+
+    // most significant bit
+    int msb(int value)
+    {
+      //return std::ceil(log2(value));
+      return intSizeBits - __builtin_clz(value | 1);
+    }
 
   public:
 
@@ -34,9 +43,8 @@ class JaggedArrayBp : public JaggedArray
       delete[] arrays;
     }
 
-    virtual int packWidth(int index) = 0;
-
-    int getMemSize() {
+    int getMemSize()
+    {
       int memSize = 0;
 
       // get the index that the character starts at and its offset
@@ -46,7 +54,7 @@ class JaggedArrayBp : public JaggedArray
         int j = 0;
         int offset = 0;
         // get the number of bits each value will be packed in
-        int width = packWidth(i);
+        int width = getPackWidth(i);
         // mask the bits left of the packed value
         int value = (1 << width) - 1;
         while (value != 0) {
@@ -88,7 +96,7 @@ class JaggedArrayBp : public JaggedArray
     {
 
       // get the number of bits each value will be packed in
-      int width = packWidth(index);
+      int width = setPackWidth(index, values, length);
 
       // compute the smallest uint8_t array that will hold all the bits
       int n = ((width * length) + size - 1) / size;
@@ -151,7 +159,7 @@ class JaggedArrayBp : public JaggedArray
       uint8_t* array = arrays[index];
 
       // get the number of bits each value will be packed in
-      int width = packWidth(index);
+      int width = getPackWidth(index);
 
       // mask the bits left of the packed value
       int value = (1 << width) - 1;
@@ -181,6 +189,9 @@ class JaggedArrayBp : public JaggedArray
 
       return value;
     }
+
+    virtual int setPackWidth(int index, int* values, int length) = 0;
+    virtual int getPackWidth(int index) = 0;
 
 };
 

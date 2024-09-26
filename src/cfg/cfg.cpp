@@ -6,6 +6,7 @@
 #include "cfg/cfg.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_bp_mono.hpp"
+#include "cfg/jagged_array_bp_opt.hpp"
 #include "cfg/jagged_array_int.hpp"
 
 namespace cfg {
@@ -349,6 +350,7 @@ CFG<JaggedArray_T>* CFG<JaggedArray_T>::fromBigRepairFiles(std::string filenameC
 // instantiate the class
 template class CFG<JaggedArrayBpIndex>;
 template class CFG<JaggedArrayBpMono>;
+template class CFG<JaggedArrayBpOpt>;
 template class CFG<JaggedArrayInt>;
 
 }

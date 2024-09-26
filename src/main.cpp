@@ -6,6 +6,7 @@
 #include "cfg/jagged_array_int.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_bp_mono.hpp"
+#include "cfg/jagged_array_bp_opt.hpp"
 //#include "cfg/random_access_amt.hpp"
 //#include "cfg/random_access_bv.hpp"
 //#include "cfg/random_access_v2_bv.hpp"
@@ -75,7 +76,8 @@ int main(int argc, char* argv[])
     string filename = argv[2];
     //CFG<JaggedArrayInt>* cfg = loadGrammar<JaggedArrayInt>(type, filename);
     //CFG<JaggedArrayBpIndex>* cfg = loadGrammar<JaggedArrayBpIndex>(type, filename);
-    CFG<JaggedArrayBpMono>* cfg = loadGrammar<JaggedArrayBpMono>(type, filename);
+    //CFG<JaggedArrayBpMono>* cfg = loadGrammar<JaggedArrayBpMono>(type, filename);
+    CFG<JaggedArrayBpOpt>* cfg = loadGrammar<JaggedArrayBpOpt>(type, filename);
 
     // print grammar stats
     cerr << "\ttext length: " << cfg->getTextLength() << endl;

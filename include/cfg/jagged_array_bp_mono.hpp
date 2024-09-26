@@ -19,12 +19,10 @@ class JaggedArrayBpMono : public JaggedArrayBp
 {
   private:
 
-    const std::size_t intSizeBits = sizeof(int) * 8;
-
     sdsl::sd_vector<> rulePackBitvector;
     sdsl::sd_vector<>::rank_1_type rulePackBitvectorRank;
 
-    uint8_t* packSizes;  // size will not exceed 64
+    uint8_t* packSizes;  // no size will not exceed 64
 
     int setPackWidth(int index, int* values, int length)
     {

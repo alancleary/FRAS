@@ -7,7 +7,8 @@
 namespace cfg {
 
 /** Indexes a CFG for random access using a tail-compressed array mapped trie with partial sums. */
-class RandomAccessAMT : public RandomAccess
+template <class CFG_T>
+class RandomAccessAMT : public RandomAccess<CFG_T>
 {
 
 private:
@@ -27,7 +28,7 @@ public:
     static uint64_t getKey(uint8_t* key);
     static void setKey(uint8_t* key, uint64_t value);
 
-    RandomAccessAMT(CFG* cfg);
+    RandomAccessAMT(CFG_T* cfg);
     ~RandomAccessAMT();
 
 };

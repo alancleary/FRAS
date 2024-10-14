@@ -9,7 +9,7 @@ namespace cfg {
  * Indexes a CFG for random access using a bit vector.
  * NOTE: this class requires that the CFG rules are in smallest-expansion-first order.
  **/
-template <class sdsl_bv, class sdsl_rank, class sdsl_select>
+template <class CFG_T, class sdsl_bv, class sdsl_rank, class sdsl_select>
 class RandomAccessV2BV : public RandomAccessV2
 {
 
@@ -28,10 +28,10 @@ private:
     {
         // prepare to compute rule sizes
         uint64_t* ruleSizes = new uint64_t[cfg->startRule];
-        for (int i = 0; i < CFG::ALPHABET_SIZE; i++) {
+        for (int i = 0; i < CFG_T::ALPHABET_SIZE; i++) {
             ruleSizes[i] = 1;
         }
-        for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
+        for (int i = CFG_T::ALPHABET_SIZE; i < cfg->startRule; i++) {
             ruleSizes[i] = 0;
         }
 
@@ -39,7 +39,7 @@ private:
         uint64_t pos = 0;
         int c;
         for (int i = 0; i < cfg->startSize; i++) {
-            c = cfg->rules[cfg->startRule][i];
+            c = cfg->get(cfg->startRule, i);
             startBitvector[pos] = 1;
             pos += ruleSize(ruleSizes, c);
         }
@@ -54,7 +54,6 @@ private:
                 expansionBitvector[i] = 1;
             }
         }
-        std::cerr << "unique expansions: " << numExpansions << std::endl;
 
         // initialize the expansion array
         expansionSizes = new uint64_t[numExpansions];
@@ -77,7 +76,7 @@ private:
         if (ruleSizes[rule] != 0) return ruleSizes[rule];
 
         int c;
-        for (int i = 0; (c = cfg->rules[rule][i]) != CFG::DUMMY_CODE; i++) {
+        for (int i = 0; (c = cfg->get(rule, i)) != CFG_T::DUMMY_CODE; i++) {
             if (ruleSizes[c] == 0) {
                 ruleSize(ruleSizes, c);
             }
@@ -103,7 +102,7 @@ private:
 
 public:
 
-    RandomAccessV2BV(CFG* cfg): RandomAccessV2(cfg)
+    RandomAccessV2BV(CFG_T* cfg): RandomAccessV2(cfg)
     {
         startBitvector = sdsl_bv(cfg->textLength, 0);
         // startRule = numRules + CFG::ALPHABET_SIZE

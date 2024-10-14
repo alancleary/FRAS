@@ -1,13 +1,14 @@
 #ifndef INCLUDED_CFG_RANDOM_ACCESS_V2
 #define INCLUDED_CFG_RANDOM_ACCESS_V2
 
+#include <cstdint>
 #include <ostream>
 #include <stack>
-#include "cfg/cfg.hpp"
 
 namespace cfg {
 
 /** An abstract class that adds random access support to a CFG. */
+template <class CFG_T>
 class RandomAccessV2
 {
     private:
@@ -19,11 +20,11 @@ class RandomAccessV2
 
     protected:
 
-        CFG* cfg;
+        CFG_T* cfg;
 
     public:
 
-        RandomAccessV2(CFG* cfg): cfg(cfg), ruleStack(), indexStack() { };
+        RandomAccessV2(CFG_T* cfg): cfg(cfg), ruleStack(), indexStack() { };
 
         /**
           * Gets a substring in the original string.

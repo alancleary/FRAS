@@ -2,6 +2,9 @@
 #define INCLUDED_CFG_RANDOM_ACCESS_V2_SD
 
 #include "cfg/random_access_v2.hpp"
+#include "cfg/jagged_array_bp_index.hpp"
+#include "cfg/jagged_array_bp_mono.hpp"
+#include "cfg/jagged_array_int.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/util.hpp>
 
@@ -11,7 +14,8 @@ namespace cfg {
  * Indexes a CFG for random access using a bit vector.
  * NOTE: this class requires that the CFG rules are in smallest-expansion-first order.
  **/
-class RandomAccessV2SD : public RandomAccessV2
+template <class CFG_T>
+class RandomAccessV2SD : public RandomAccessV2<CFG_T>
 {
 
 private:
@@ -27,24 +31,24 @@ private:
 
     void initializeBitvectors()
     {
-        sdsl::bit_vector tmpStartBitvector(cfg->textLength, 0);
+        sdsl::bit_vector tmpStartBitvector(this->cfg->getTextLength(), 0);
         // startRule = numRules + CFG::ALPHABET_SIZE
-        sdsl::bit_vector tmpExpansionBitvector(cfg->startRule, 0);
+        sdsl::bit_vector tmpExpansionBitvector(this->cfg->getStartRule(), 0);
 
         // prepare to compute rule sizes
-        uint64_t* ruleSizes = new uint64_t[cfg->startRule];
-        for (int i = 0; i < CFG::ALPHABET_SIZE; i++) {
+        uint64_t* ruleSizes = new uint64_t[this->cfg->getStartRule()];
+        for (int i = 0; i < CFG_T::ALPHABET_SIZE; i++) {
             ruleSizes[i] = 1;
         }
-        for (int i = CFG::ALPHABET_SIZE; i < cfg->startRule; i++) {
+        for (int i = CFG_T::ALPHABET_SIZE; i < this->cfg->getStartRule(); i++) {
             ruleSizes[i] = 0;
         }
 
         // set the start bitvector
         uint64_t pos = 0;
         int c;
-        for (int i = 0; i < cfg->startSize; i++) {
-            c = cfg->rules[cfg->startRule][i];
+        for (int i = 0; i < this->cfg->getStartSize(); i++) {
+            c = this->cfg->get(this->cfg->getStartRule(), i);
             tmpStartBitvector[pos] = 1;
             pos += ruleSize(ruleSizes, c);
         }
@@ -53,7 +57,7 @@ private:
         // set the expansion bitvector and count the number of unique expansions
         uint64_t previousSize = 1;
         int numExpansions = 1;  // 1 will be in the array but not have a bit set
-        for (int i = 0; i < cfg->startRule; i++) {
+        for (int i = 0; i < this->cfg->getStartRule(); i++) {
             if (ruleSizes[i] > previousSize) {
                 numExpansions++;
                 previousSize = ruleSizes[i];
@@ -67,7 +71,7 @@ private:
         previousSize = 1;
         numExpansions = 0;
         expansionSizes[numExpansions++] = previousSize;
-        for (int i = 0; i < cfg->startRule; i++) {
+        for (int i = 0; i < this->cfg->getStartRule(); i++) {
             if (ruleSizes[i] > previousSize) {
                 previousSize = ruleSizes[i];
                 expansionSizes[numExpansions++] = previousSize;
@@ -83,7 +87,7 @@ private:
         if (ruleSizes[rule] != 0) return ruleSizes[rule];
 
         int c;
-        for (int i = 0; (c = cfg->rules[rule][i]) != CFG::DUMMY_CODE; i++) {
+        for (int i = 0; (c = this->cfg->get(rule, i)) != CFG_T::DUMMY_CODE; i++) {
             if (ruleSizes[c] == 0) {
                 ruleSize(ruleSizes, c);
             }
@@ -129,7 +133,7 @@ public:
                expansionSize;
     }
 
-    RandomAccessV2SD(CFG* cfg): RandomAccessV2(cfg)
+    RandomAccessV2SD(CFG_T* cfg): RandomAccessV2<CFG_T>(cfg)
     {
         initializeBitvectors();
         startBitvectorRank = sdsl::sd_vector<>::rank_1_type(&startBitvector);
@@ -143,6 +147,11 @@ public:
     };
 
 };
+
+// instantiate the class
+template class RandomAccessV2SD<CFG<JaggedArrayBpIndex>>;
+template class RandomAccessV2SD<CFG<JaggedArrayBpMono>>;
+template class RandomAccessV2SD<CFG<JaggedArrayInt>>;
 
 }
 

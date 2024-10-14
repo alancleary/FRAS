@@ -18,7 +18,7 @@ class JaggedArrayBpOpt : public JaggedArrayBp
   private:
 
     uint8_t packSize;  // will not exceed 64
-    uint8_t* packSizes;  // no size will not exceed 64
+    uint8_t* packSizes;  // no size will exceed 64
 
     int setPackWidth(int index, int* values, int length)
     {

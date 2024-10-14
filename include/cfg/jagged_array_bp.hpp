@@ -85,10 +85,10 @@ class JaggedArrayBp : public JaggedArray
           shift -= size;
         }
         if (shift == 0) {
-          value |= array[j++];
+          value |= array[j];
         // shift < 0
         } else {
-          value |= array[j++] >> -shift;
+          value |= array[j] >> -shift;
         }
       }
       return value;
@@ -124,9 +124,9 @@ class JaggedArrayBp : public JaggedArray
         int offset = 0;
         // get the number of bits each value will be packed in
         int width = getPackWidth(i);
-        // mask the bits left of the packed value
-        int value = (1 << width) - 1;
-        while (value != 0) {
+        while (true) {
+          // mask the bits left of the packed value
+          int value = (1 << width) - 1;
           // the value is completely stored in entry j
           if (offset + width <= size) {
             // get the packed value
@@ -150,9 +150,12 @@ class JaggedArrayBp : public JaggedArray
               offset = 0;
             // shift < 0
             } else {
-              value |= array[j++] >> -shift;
+              value |= array[j] >> -shift;
               offset = size + shift;
             }
+          }
+          if (value != 0) {
+            break;
           }
         }
         memSize += j;

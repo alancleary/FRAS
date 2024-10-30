@@ -7,8 +7,8 @@ endif()
 
 # setup the CMake project
 project("fras"
-        VERSION 0.0.1
-        DESCRIPTION "Represents a context-free grammar as an array mapped trie"
+        VERSION 0.3.0
+        DESCRIPTION "A library the provides bit packed representations of and random access to grammar-compressed strings"
         LANGUAGES CXX
 )
 

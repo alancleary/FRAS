@@ -2,17 +2,17 @@
 #include <chrono>
 #include <vector>
 
-#include "cfg/cfg.hpp"
-#include "cfg/jagged_array_int.hpp"
-#include "cfg/jagged_array_bp_index.hpp"
-#include "cfg/jagged_array_bp_mono.hpp"
-#include "cfg/jagged_array_bp_opt.hpp"
-//#include "cfg/random_access_bv.hpp"
-#include "cfg/random_access_sd.hpp"
+#include "fras/array/jagged_array_int.hpp"
+#include "fras/array/jagged_array_bp_index.hpp"
+#include "fras/array/jagged_array_bp_mono.hpp"
+#include "fras/array/jagged_array_bp_opt.hpp"
+#include "fras/cfg/cfg.hpp"
+//#include "fras/cfg/random_access_bv.hpp"
+#include "fras/cfg/random_access_sd.hpp"
 #include "xoroshiro/xoroshiro128plus.hpp"
 
 using namespace std;
-using namespace cfg;
+using namespace fras;
 
 void usage(int argc, char* argv[]) {
     cerr << "usage: " << argv[0] << " <type> <filename> <encoding> <querysize> [numqueries=10000] [seed=random_device]" << endl;

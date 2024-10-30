@@ -1,13 +1,13 @@
-#ifndef INCLUDED_CFG_JAGGED_ARRAY_INT
-#define INCLUDED_CFG_JAGGED_ARRAY_INT
+#ifndef INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_INT
+#define INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_INT
 
 #include <cstddef>
 #include <cstdlib>
 #include <malloc.h>
 #include <new>
-#include "cfg/jagged_array.hpp"
+#include "fras/array/jagged_array.hpp"
 
-namespace cfg {
+namespace fras {
 
 /** Implements the jagged array abstract class using int arrays. */
 class JaggedArrayInt : public JaggedArray

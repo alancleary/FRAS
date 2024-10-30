@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_JAGGED_ARRAY_BP_INDEX
-#define INCLUDED_CFG_JAGGED_ARRAY_BP_INDEX
+#ifndef INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP_INDEX
+#define INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP_INDEX
 
-#include "cfg/jagged_array_bp.hpp"
+#include "fras/array/jagged_array_bp.hpp"
 
-namespace cfg {
+namespace fras {
 
 /**
  * Implements the JaggedArrayBp abstract class using index-based bit packing.

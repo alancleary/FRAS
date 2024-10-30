@@ -1,10 +1,10 @@
-#ifndef INCLUDED_CFG_CFG
-#define INCLUDED_CFG_CFG
+#ifndef INCLUDED_FRAS_CFG_CFG
+#define INCLUDED_FRAS_CFG_CFG
 
 #include <cstdint>
 #include <string>
 
-namespace cfg {
+namespace fras {
 
 /** Parses different grammar-compressed CFGs into a naive encoding. */
 template <class JaggedArray_T>

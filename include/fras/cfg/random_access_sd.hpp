@@ -1,14 +1,14 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS_SD
-#define INCLUDED_CFG_RANDOM_ACCESS_SD
+#ifndef INCLUDED_FRAS_CFG_RANDOM_ACCESS_SD
+#define INCLUDED_FRAS_CFG_RANDOM_ACCESS_SD
 
-#include "cfg/random_access.hpp"
-#include "cfg/jagged_array_bp_index.hpp"
-#include "cfg/jagged_array_bp_mono.hpp"
-#include "cfg/jagged_array_int.hpp"
+#include "fras/cfg/random_access.hpp"
+#include "fras/array/jagged_array_bp_index.hpp"
+#include "fras/array/jagged_array_bp_mono.hpp"
+#include "fras/array/jagged_array_int.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/util.hpp>
 
-namespace cfg {
+namespace fras {
 
 /**
  * Indexes a CFG for random access using a bit vector.

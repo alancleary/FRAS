@@ -1,7 +1,7 @@
-#ifndef INCLUDED_CFG_JAGGED_ARRAY
-#define INCLUDED_CFG_JAGGED_ARRAY
+#ifndef INCLUDED_FRAS_ARRAY_JAGGED_ARRAY
+#define INCLUDED_FRAS_ARRAY_JAGGED_ARRAY
 
-namespace cfg {
+namespace fras {
 
 /** An abstract class that provides an interface for jagged array implementations. */
 class JaggedArray

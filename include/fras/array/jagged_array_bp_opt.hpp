@@ -1,12 +1,12 @@
-#ifndef INCLUDED_CFG_JAGGED_ARRAY_BP_OPT
-#define INCLUDED_CFG_JAGGED_ARRAY_BP_OPT
+#ifndef INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP_OPT
+#define INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP_OPT
 
 #include <algorithm>
-#include "cfg/jagged_array_bp.hpp"
+#include "fras/array/jagged_array_bp.hpp"
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/util.hpp>
 
-namespace cfg {
+namespace fras {
 
 /**
  * Implements the JaggedArrayBp abstract class using the optimal packing size

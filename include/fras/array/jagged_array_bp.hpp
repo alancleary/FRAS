@@ -1,9 +1,10 @@
-#ifndef INCLUDED_CFG_JAGGED_ARRAY_BP
-#define INCLUDED_CFG_JAGGED_ARRAY_BP
+#ifndef INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP
+#define INCLUDED_FRAS_ARRAY_JAGGED_ARRAY_BP
 
-#include "cfg/jagged_array.hpp"
+#include "fras/array/jagged_array.hpp"
+#include <cstdint>
 
-namespace cfg {
+namespace fras {
 
 /**
  * An abstract class that provides an interface for jagged array implementations based on bit packing.

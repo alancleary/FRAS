@@ -1,9 +1,9 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS_BV
-#define INCLUDED_CFG_RANDOM_ACCESS_BV
+#ifndef INCLUDED_FRAS_CFG_RANDOM_ACCESS_BV
+#define INCLUDED_FRAS_CFG_RANDOM_ACCESS_BV
 
-#include "cfg/random_access.hpp"
+#include "fras/cfg/random_access.hpp"
 
-namespace cfg {
+namespace fras {
 
 /**
  * Indexes a CFG for random access using a bit vector.

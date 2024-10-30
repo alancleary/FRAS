@@ -1,11 +1,11 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS
-#define INCLUDED_CFG_RANDOM_ACCESS
+#ifndef INCLUDED_FRAS_CFG_RANDOM_ACCESS
+#define INCLUDED_FRAS_CFG_RANDOM_ACCESS
 
 #include <cstdint>
 #include <ostream>
 #include <stack>
 
-namespace cfg {
+namespace fras {
 
 /** An abstract class that adds random access support to a CFG. */
 template <class CFG_T>

@@ -1,19 +1,18 @@
-//#include <stack>
 #include <stdexcept>
 #include "cfg/cfg.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_bp_mono.hpp"
 #include "cfg/jagged_array_bp_opt.hpp"
 #include "cfg/jagged_array_int.hpp"
-#include "cfg/random_access_v2.hpp"
+#include "cfg/random_access.hpp"
 
 namespace cfg {
 
 // random access
 
-//void RandomAccessV2::get(std::ostream& out, uint64_t begin, uint64_t end)
+//void RandomAccess::get(std::ostream& out, uint64_t begin, uint64_t end)
 template <class CFG_T>
-void RandomAccessV2<CFG_T>::get(char* out, uint64_t begin, uint64_t end)
+void RandomAccess<CFG_T>::get(char* out, uint64_t begin, uint64_t end)
 {
     //if (begin < 0 || end >= cfg->textLength || begin > end) {
     //    throw std::runtime_error("begin/end out of bounds");
@@ -76,9 +75,9 @@ void RandomAccessV2<CFG_T>::get(char* out, uint64_t begin, uint64_t end)
 }
 
 // instantiate the class
-template class RandomAccessV2<CFG<JaggedArrayBpIndex>>;
-template class RandomAccessV2<CFG<JaggedArrayBpMono>>;
-template class RandomAccessV2<CFG<JaggedArrayBpOpt>>;
-template class RandomAccessV2<CFG<JaggedArrayInt>>;
+template class RandomAccess<CFG<JaggedArrayBpIndex>>;
+template class RandomAccess<CFG<JaggedArrayBpMono>>;
+template class RandomAccess<CFG<JaggedArrayBpOpt>>;
+template class RandomAccess<CFG<JaggedArrayInt>>;
 
 }

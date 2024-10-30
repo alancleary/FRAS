@@ -7,10 +7,8 @@
 #include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_bp_mono.hpp"
 #include "cfg/jagged_array_bp_opt.hpp"
-//#include "cfg/random_access_amt.hpp"
 //#include "cfg/random_access_bv.hpp"
-//#include "cfg/random_access_v2_bv.hpp"
-#include "cfg/random_access_v2_sd.hpp"
+#include "cfg/random_access_sd.hpp"
 #include "xoroshiro/xoroshiro128plus.hpp"
 
 using namespace std;
@@ -62,9 +60,9 @@ void benchmark(JaggedArray_T* cfg, uint32_t querySize, uint32_t numQueries, xoro
     cerr << "\tmem size: " << cfgMemSize << endl;
 
     // instantiate indexes
-    RandomAccessV2SD sd(cfg);
+    RandomAccessSD sd(cfg);
     uint64_t sdMemSize = sd.memSize();
-    cerr << "\tsdv2 mem size: " << sdMemSize << endl;
+    cerr << "\tsd mem size: " << sdMemSize << endl;
 
     cerr << "\ttotal mem size: " << cfgMemSize + sdMemSize << endl;
     

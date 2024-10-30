@@ -1,7 +1,7 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS_V2_BV
-#define INCLUDED_CFG_RANDOM_ACCESS_V2_BV
+#ifndef INCLUDED_CFG_RANDOM_ACCESS_BV
+#define INCLUDED_CFG_RANDOM_ACCESS_BV
 
-#include "cfg/random_access_v2.hpp"
+#include "cfg/random_access.hpp"
 
 namespace cfg {
 
@@ -10,7 +10,7 @@ namespace cfg {
  * NOTE: this class requires that the CFG rules are in smallest-expansion-first order.
  **/
 template <class CFG_T, class sdsl_bv, class sdsl_rank, class sdsl_select>
-class RandomAccessV2BV : public RandomAccessV2
+class RandomAccessBV : public RandomAccess
 {
 
 private:
@@ -102,7 +102,7 @@ private:
 
 public:
 
-    RandomAccessV2BV(CFG_T* cfg): RandomAccessV2(cfg)
+    RandomAccessBV(CFG_T* cfg): RandomAccess(cfg)
     {
         startBitvector = sdsl_bv(cfg->textLength, 0);
         // startRule = numRules + CFG::ALPHABET_SIZE
@@ -113,7 +113,7 @@ public:
         expansionBitvectorRank = sdsl_rank(&expansionBitvector);
     }
 
-    ~RandomAccessV2BV()
+    ~RandomAccessBV()
     {
         delete[] expansionSizes;
     };

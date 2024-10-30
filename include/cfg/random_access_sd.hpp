@@ -1,7 +1,7 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS_V2_SD
-#define INCLUDED_CFG_RANDOM_ACCESS_V2_SD
+#ifndef INCLUDED_CFG_RANDOM_ACCESS_SD
+#define INCLUDED_CFG_RANDOM_ACCESS_SD
 
-#include "cfg/random_access_v2.hpp"
+#include "cfg/random_access.hpp"
 #include "cfg/jagged_array_bp_index.hpp"
 #include "cfg/jagged_array_bp_mono.hpp"
 #include "cfg/jagged_array_int.hpp"
@@ -15,7 +15,7 @@ namespace cfg {
  * NOTE: this class requires that the CFG rules are in smallest-expansion-first order.
  **/
 template <class CFG_T>
-class RandomAccessV2SD : public RandomAccessV2<CFG_T>
+class RandomAccessSD : public RandomAccess<CFG_T>
 {
 
 private:
@@ -133,7 +133,7 @@ public:
                expansionSize;
     }
 
-    RandomAccessV2SD(CFG_T* cfg): RandomAccessV2<CFG_T>(cfg)
+    RandomAccessSD(CFG_T* cfg): RandomAccess<CFG_T>(cfg)
     {
         initializeBitvectors();
         startBitvectorRank = sdsl::sd_vector<>::rank_1_type(&startBitvector);
@@ -141,7 +141,7 @@ public:
         expansionBitvectorRank = sdsl::sd_vector<>::rank_1_type(&expansionBitvector);
     }
 
-    ~RandomAccessV2SD()
+    ~RandomAccessSD()
     {
         delete[] expansionSizes;
     };
@@ -149,9 +149,9 @@ public:
 };
 
 // instantiate the class
-template class RandomAccessV2SD<CFG<JaggedArrayBpIndex>>;
-template class RandomAccessV2SD<CFG<JaggedArrayBpMono>>;
-template class RandomAccessV2SD<CFG<JaggedArrayInt>>;
+template class RandomAccessSD<CFG<JaggedArrayBpIndex>>;
+template class RandomAccessSD<CFG<JaggedArrayBpMono>>;
+template class RandomAccessSD<CFG<JaggedArrayInt>>;
 
 }
 

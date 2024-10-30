@@ -1,5 +1,5 @@
-#ifndef INCLUDED_CFG_RANDOM_ACCESS_V2
-#define INCLUDED_CFG_RANDOM_ACCESS_V2
+#ifndef INCLUDED_CFG_RANDOM_ACCESS
+#define INCLUDED_CFG_RANDOM_ACCESS
 
 #include <cstdint>
 #include <ostream>
@@ -9,7 +9,7 @@ namespace cfg {
 
 /** An abstract class that adds random access support to a CFG. */
 template <class CFG_T>
-class RandomAccessV2
+class RandomAccess
 {
     private:
         std::stack<int> ruleStack;
@@ -24,7 +24,7 @@ class RandomAccessV2
 
     public:
 
-        RandomAccessV2(CFG_T* cfg): cfg(cfg), ruleStack(), indexStack() { };
+        RandomAccess(CFG_T* cfg): cfg(cfg), ruleStack(), indexStack() { };
 
         /**
           * Gets a substring in the original string.

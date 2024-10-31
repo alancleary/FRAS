@@ -12,10 +12,6 @@ namespace fras {
 template <class CFG_T>
 class RandomAccess
 {
-    private:
-        std::stack<int> ruleStack;
-        std::stack<int> indexStack;
-
     protected:
         virtual void rankSelect(uint64_t i, int& rank, uint64_t& select) = 0;
         virtual uint64_t expansionSize(int rule) = 0;
@@ -24,7 +20,51 @@ class RandomAccess
 
         CFG_T* cfg;
 
-        RandomAccess(CFG_T* cfg): cfg(cfg), ruleStack(), indexStack() { };
+        RandomAccess(CFG_T* cfg): cfg(cfg) { };
+
+        /**
+          * Gets a single character in the original string.
+          *
+          * @param pos The position of the character in the original string.
+          * @return The character at the given position in the original string.
+          */
+        //void get(std::ostream& out, uint64_t begin, uint64_t end);
+        char get(uint64_t pos)
+        {
+            //if (begin < 0 || end >= cfg->getTextLength() || begin > end) {
+            //    throw std::runtime_error("position out of bounds");
+            //}
+
+            // get the start rule character to start parsing at
+            int c, rank, r = cfg->getStartRule();
+            uint64_t selected;
+            rankSelect(pos, rank, selected);
+            int i = rank - 1;
+
+            // descend the parse tree to the correct position
+            uint64_t size, ignore = pos - selected;
+            while (ignore >= 0) {
+                c = cfg->get(r, i);
+                // terminal character
+                if (c < CFG_T::ALPHABET_SIZE) {
+                    if (ignore == 0) {
+                        return (char) c;
+                    }
+                    i++;
+                    ignore--;
+                // non-terminal character
+                } else {
+                    size = expansionSize(c);
+                    if (size > ignore) {
+                        r = c;
+                        i = 0;
+                    } else {
+                        ignore -= size;
+                        i++;
+                    }
+                }
+            }
+        }
 
         /**
           * Gets a substring in the original string.
@@ -37,9 +77,13 @@ class RandomAccess
         //void get(std::ostream& out, uint64_t begin, uint64_t end);
         void get(char* out, uint64_t begin, uint64_t end)
         {
-            //if (begin < 0 || end >= cfg->textLength || begin > end) {
+            //if (begin < 0 || end >= cfg->getTextLength() || begin > end) {
             //    throw std::runtime_error("begin/end out of bounds");
             //}
+
+            std::stack<int> ruleStack;
+            std::stack<int> indexStack;
+
             uint64_t length = end - begin;
 
             // get the start rule character to start parsing at
@@ -74,8 +118,8 @@ class RandomAccess
 
             // decode the substring
             for (uint64_t j = 0; j < length;) {
-                // end of rule
                 c = cfg->get(r, i);
+                // end of rule
                 if (c == CFG_T::DUMMY_CODE) {
                     r = ruleStack.top();
                     ruleStack.pop();
@@ -133,8 +177,8 @@ private:
         // decode the next character
         int c;
         while (j < ra->cfg->getTextLength()) {
-            // end of rule
             c = ra->cfg->get(r, i);
+            // end of rule
             if (c == CFG_T::DUMMY_CODE) {
                 r = ruleStack.top();
                 ruleStack.pop();

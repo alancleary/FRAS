@@ -2,6 +2,7 @@
 #define INCLUDED_FRAS_CFG_RANDOM_ACCESS
 
 #include <cstdint>
+#include <iterator>
 #include <ostream>
 #include <stack>
 
@@ -18,11 +19,9 @@ class RandomAccess
         virtual void rankSelect(uint64_t i, int& rank, uint64_t& select) = 0;
         virtual uint64_t expansionSize(int rule) = 0;
 
-    protected:
+    public:
 
         CFG_T* cfg;
-
-    public:
 
         RandomAccess(CFG_T* cfg): cfg(cfg), ruleStack(), indexStack() { };
 
@@ -96,6 +95,81 @@ class RandomAccess
                 }
             }
         }
+
+        class Iterator;
+
+        Iterator begin() { return Iterator(this, 0); };
+        Iterator begin(int pos) { return Iterator(this, pos); };
+        Iterator end() { return Iterator(this, this->cfg->getTextLength()); };
+};
+
+
+/** An iterator for iterating the text in the CFG. */
+template <class CFG_T>
+class RandomAccess<CFG_T>::Iterator
+{
+
+using iterator_category = std::forward_iterator_tag;
+//using difference_type = std::ptrdiff_t;
+using value_type = char;
+using pointer = char*;
+using reference = char&;
+
+private:
+
+    //const CFG* parent;
+    const RandomAccess<CFG_T>* ra;
+
+    // TODO: stacks should be preallocated to size of max depth
+    //std::stack<int> ruleStack;
+    //std::stack<int> indexStack;
+    //int skip;  // how many characters to skip before decoding
+    //int r;  // current rule being decoded
+    //int i;  // index in r of current (non-)terminal being decoded
+    int j;  // currently decoded character in text
+
+    value_type m_char;
+
+    void next();
+
+public:
+
+    //Iterator(const CFG* cfg, int pos);
+    Iterator(const RandomAccess<CFG_T>* ra, int pos) : ra(ra), j(pos)
+    {
+        // return the end iterator if out of bounds
+        if (pos < 0 || pos >= ra->cfg->getTextLength()) {
+            j = ra->cfg->getTextLength();
+            return;
+        }
+
+        next();
+    }
+
+    // dereference
+    const reference operator*() { return m_char; };
+    const pointer operator->() { return &m_char; };
+
+    // prefix increment
+    Iterator& operator++()
+    {
+        j++;
+        next();
+        return *this;
+    }
+
+    // postfix increment
+    Iterator operator++(int)
+    {
+        Iterator tmp = *this;
+        ++(*this);
+        return tmp;
+    }
+
+    // comparators
+    bool operator==(const Iterator& itr) { return this->j == itr.j; };
+    bool operator!=(const Iterator& itr) { return this->j != itr.j; };
+
 };
 
 }

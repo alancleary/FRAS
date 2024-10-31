@@ -88,6 +88,10 @@ void benchmark(JaggedArray_T* cfg, uint32_t querySize, uint32_t numQueries, xoro
           startTime = chrono::steady_clock::now();
           //sd.get(cout, begin, end);
           sd.get(out, begin, end);
+          //auto it = sd.begin(begin);
+          //for (int k = 0; k < querySize; k++) {
+          //    ++it;
+          //}
           endTime = chrono::steady_clock::now();
           durationSD += chrono::duration_cast<chrono::microseconds>(endTime - startTime).count();
       }

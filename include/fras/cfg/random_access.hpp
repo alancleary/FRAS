@@ -16,6 +16,7 @@ class RandomAccess
         std::stack<int> ruleStack;
         std::stack<int> indexStack;
 
+    protected:
         virtual void rankSelect(uint64_t i, int& rank, uint64_t& select) = 0;
         virtual uint64_t expansionSize(int rule) = 0;
 
@@ -117,32 +118,85 @@ using reference = char&;
 
 private:
 
-    //const CFG* parent;
-    const RandomAccess<CFG_T>* ra;
+    RandomAccess<CFG_T>* ra;
 
-    // TODO: stacks should be preallocated to size of max depth
-    //std::stack<int> ruleStack;
-    //std::stack<int> indexStack;
-    //int skip;  // how many characters to skip before decoding
-    //int r;  // current rule being decoded
-    //int i;  // index in r of current (non-)terminal being decoded
+    std::stack<int> ruleStack;
+    std::stack<int> indexStack;
+    int r;  // current rule being decoded
+    int i;  // index in r of current (non-)terminal being decoded
     int j;  // currently decoded character in text
 
     value_type m_char;
 
-    void next();
+    void next()
+    {
+        // decode the next character
+        int c;
+        while (j < ra->cfg->getTextLength()) {
+            // end of rule
+            c = ra->cfg->get(r, i);
+            if (c == CFG_T::DUMMY_CODE) {
+                r = ruleStack.top();
+                ruleStack.pop();
+                i = indexStack.top();
+                indexStack.pop();
+            // terminal character
+            } else if (c < CFG_T::ALPHABET_SIZE) {
+                m_char = (char) c;
+                i++;
+                break;
+            // non-terminal character
+            } else {
+                ruleStack.push(r);
+                r = c;
+                indexStack.push(i + 1);
+                i = 0;
+            }
+        }
+    }
 
 public:
 
-    //Iterator(const CFG* cfg, int pos);
-    Iterator(const RandomAccess<CFG_T>* ra, int pos) : ra(ra), j(pos)
+    Iterator(RandomAccess<CFG_T>* ra, int pos) : ra(ra), j(pos), ruleStack(), indexStack()
     {
         // return the end iterator if out of bounds
-        if (pos < 0 || pos >= ra->cfg->getTextLength()) {
+        if (j < 0 || j >= ra->cfg->getTextLength()) {
             j = ra->cfg->getTextLength();
             return;
         }
 
+        // get the start rule character to start parsing at
+        int rank;
+        uint64_t selected;
+        ra->rankSelect(pos, rank, selected);
+        i = rank - 1;
+
+        // descend the parse tree to the correct start position
+        uint64_t size, ignore = pos - selected;
+        int c;
+        r = ra->cfg->getStartRule();
+        while (ignore > 0) {
+            c = ra->cfg->get(r, i);
+            // terminal character
+            if (c < CFG_T::ALPHABET_SIZE) {
+                i++;
+                ignore--;
+            // non-terminal character
+            } else {
+                size = ra->expansionSize(c);
+                if (size > ignore) {
+                    ruleStack.push(r);
+                    r = c;
+                    indexStack.push(i + 1);
+                    i = 0;
+                } else {
+                    ignore -= size;
+                    i++;
+                }
+            }
+        }
+
+        // compute the first character
         next();
     }
 

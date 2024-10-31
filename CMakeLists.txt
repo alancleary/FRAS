@@ -54,4 +54,4 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 #include_directories("${sdsl_SOURCE_DIR}/include")
 
 # link the libraries
-target_include_directories(${PROJECT_NAME} PRIVATE ${sdsl_SOURCE_DIR}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${sdsl_SOURCE_DIR}/include)
